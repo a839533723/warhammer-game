@@ -6,15 +6,17 @@
 const API_KEY = 'sk-7324d922204640fd87ad5ae868b82376';
 
 /**
- * 调用千问API
+ * 调用千问API（添加CORS支持）
  */
 async function callQwen(prompt, maxTokens = 500) {
     try {
         const response = await fetch('https://dashscope.aliyuncs.com/api/v1/services/aigc/text-generation/generation', {
             method: 'POST',
+            mode: 'cors',  // 添加CORS模式
             headers: {
                 'Authorization': `Bearer ${API_KEY}`,
-                'Content-Type': 'application/json'
+                'Content-Type': 'application/json',
+                'Access-Control-Allow-Origin': '*'
             },
             body: JSON.stringify({
                 model: 'qwen-turbo',
