@@ -338,18 +338,27 @@ function initGame() {
  */
 function startGuidePhase() {
     // 显示开场白
-    addDialog('system', '🌌', '【战锤40K：虚空黎明 v0.3】');
-    addDialog('system', '👩', '你好，战士。');
+    addDialog('system', '🌌', '【战锤40K：虚空黎明 v0.3.1】');
+    addDialog('system', '👩', '你好，战士。正在连接伊莲娜...');
     
-    // 显示预设开场白（同时尝试调用AI）
-    setTimeout(() => {
-        showDefaultGuide();
+    // 调用AI生成增强版开场白
+    setTimeout(async () => {
+        const enhancedGuide = await aiSystem.generateEnhancedGuide();
         
-        // 尝试调用AI（异步）
-        callAIGuide().catch(() => {
-            console.log('AI调用失败，使用预设文本');
-        });
-    }, 500);
+        if (enhancedGuide) {
+            // 分段显示AI生成的文本
+            const paragraphs = enhancedGuide.split('\n\n');
+            for (const para of paragraphs) {
+                if (para.trim()) {
+                    addDialog('npc', '👩', para);
+                    await new Promise(r => setTimeout(r, 500));
+                }
+            }
+        } else {
+            // AI失败时使用预设文本
+            showDefaultGuide();
+        }
+    }, 1000);
 }
 
 /**
@@ -376,60 +385,9 @@ function showDefaultGuide() {
 
 你准备好了吗，战士？
 
-【点击下方"开始任务"按钮开始游戏】`;
+【点击下方"开始任务"按钮开始冒险】`;
 
     addDialog('npc', '👩', guideText);
-}
-
-/**
- * 调用AI生成引导文本（异步，不阻塞显示）
- */
-async function callAIGuide() {
-    const API_KEY = 'sk-7324d922204640fd87ad5ae868b82376';
-    
-    const prompt = `你是战锤40K游戏的AI主持人伊莲娜。用200字左右的中文，生成一段沉浸式开场白，介绍：
-1. 主角身份（${gameState.character.class}）
-2. 当前环境的危险
-3. 混沌的威胁
-4. 游戏基本规则
-
-用富有沉浸感的方式，不要太长。`;
-
-    try {
-        const response = await fetch('https://dashscope.aliyuncs.com/api/v1/services/aigc/text-generation/generation', {
-            method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${API_KEY}`,
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                model: 'qwen-turbo',
-                input: {
-                    messages: [
-                        { role: 'user', content: prompt }
-                    ]
-                },
-                parameters: {
-                    max_tokens: 500,
-                    temperature: 0.7
-                }
-            })
-        });
-
-        const data = await response.json();
-        const guideText = data.output?.text;
-        
-        if (guideText) {
-            // 在预设文本后追加AI文本
-            setTimeout(() => {
-                addDialog('npc', '🤖', '【AI补充】' + guideText);
-            }, 1500);
-        }
-        
-    } catch (error) {
-        console.error('AI调用失败:', error);
-        // 静默失败，使用预设文本
-    }
 }
 
 /**
@@ -455,7 +413,7 @@ function startMainPhase() {
 /**
  * 抽取卡牌
  */
-function drawCard() {
+async function drawCard() {
     const types = ['chaos', 'faith', 'combat', 'devotion'];
     const type = types[Math.floor(Math.random() * types.length)];
     
@@ -465,19 +423,29 @@ function drawCard() {
     gameState.hand = [card];
     
     addDialog('system', '🃏', `【${getCardTypeName(type)}卡】`);
-    addDialog('npc', '📜', card.description);
+    
+    // 调用AI生成事件描写
+    const eventDesc = await aiSystem.generateEventDescription(card);
+    
+    if (eventDesc) {
+        addDialog('npc', '🌍', eventDesc);
+    } else {
+        // AI失败时使用预设文本
+        addDialog('npc', '📜', card.description);
+    }
+    
     addDialog('system', '⏰', `任务期限：${gameState.maxCardProgress}回合`);
     
-    // 根据卡牌类型显示不同提示
+    // 根据卡牌类型显示提示
     if (type === 'chaos') {
-        addDialog('system', '🔍', '任务：找出内鬼。审问NPC，收集证据，投票决定。');
+        addDialog('system', '🔍', '任务：找出内鬼。点击"调查"面板审问NPC。');
         startInvestigation();
     } else if (type === 'faith') {
-        addDialog('system', '✨', '任务：完成帝皇的旨意。做出选择，证明你的信仰。');
+        addDialog('system', '✨', '任务：完成帝皇的旨意。点击"信仰"面板进行祈祷或净化。');
     } else if (type === 'combat') {
-        addDialog('system', '⚔️', '任务：前往指定地点战斗。击败敌人，获得胜利。');
+        addDialog('system', '⚔️', '任务：击败敌人。点击"系统"面板使用战斗指令。');
     } else if (type === 'devotion') {
-        addDialog('system', '💕', '任务：获取NPC的好感或追随。送礼、帮助、对话。');
+        addDialog('system', '💕', '任务：获取追随者。点击"眷属"面板送礼或帮助NPC。');
     }
     
     updateUI();
@@ -675,22 +643,28 @@ function startInvestigation() {
 }
 
 /**
- * 审问NPC
+ * 审问NPC（AI生成对话）
  */
-function interrogate(npcId) {
+async function interrogate(npcId) {
     const npc = gameState.npcs[npcId];
     if (!npc) {
         addDialog('system', '⚠️', '找不到该NPC');
         return;
     }
     
-    // 随机选择对话
-    const dialogue = npc.dialogue[Math.floor(Math.random() * npc.dialogue.length)];
+    // 调用AI生成NPC对话
+    const dialogue = await aiSystem.generateNPCDialogue(npcId);
     
-    addDialog('npc', '💬', `${npc.name}：${dialogue}`);
+    if (dialogue) {
+        addDialog('npc', '💬', `${npc.name}：${dialogue}`);
+    } else {
+        // AI失败时使用预设对话
+        const presetDialogue = npc.dialogue[Math.floor(Math.random() * npc.dialogue.length)];
+        addDialog('npc', '💬', `${npc.name}：${presetDialogue}`);
+    }
     
     // 收集线索（可能是真线索或假线索，取决于混沌值）
-    const chaosBonus = gameState.character.chaos > 50 ? 0.3 : 0; // 高混沌值时容易获得假线索
+    const chaosBonus = gameState.character.chaos > 50 ? 0.3 : 0;
     const isFalseClue = Math.random() < chaosBonus;
     
     const clue = {
@@ -903,7 +877,6 @@ function resetGame() {
 window.gameState = gameState;
 window.initGame = initGame;
 window.startGuidePhase = startGuidePhase;
-window.callAIGuide = callAIGuide;
 window.startMainPhase = startMainPhase;
 window.drawCard = drawCard;
 window.generateCard = generateCard;

@@ -252,9 +252,43 @@
                 <span class="progress-max">/100</span>
             </div>
         </div>
+        
+        <!-- 与伊莲娜对话按钮 -->
+        <div class="elena-chat-section">
+            <button class="elena-btn" onclick="showElenaChat()">
+                💬 与伊莲娜对话
+            </button>
+        </div>
+        
+        <!-- 伊莲娜对话弹窗 -->
+        <div class="elena-popup" id="elenaPopup" style="display: none;">
+            <div class="elena-popup-content">
+                <div class="elena-header">
+                    <span class="elena-avatar">👩</span>
+                    <span class="elena-name">伊莲娜</span>
+                    <button class="close-btn" onclick="hideElenaChat()">×</button>
+                </div>
+                <div class="elena-messages" id="elenaMessages">
+                    <div class="elena-message">
+                        嘿，小鬼！有什么需要姐姐帮忙的吗？
+                    </div>
+                </div>
+                <div class="elena-quick-questions">
+                    <button onclick="askElena('card')">这张卡是什么？</button>
+                    <button onclick="askElena('chaos')">混沌值是什么？</button>
+                    <button onclick="askElena('strategy')">现在该怎么做？</button>
+                    <button onclick="askElena('general')">游戏怎么玩？</button>
+                </div>
+                <div class="elena-input-area">
+                    <input type="text" id="elenaInput" placeholder="输入你的问题..." onkeypress="if(event.key==='Enter') sendToElena()">
+                    <button onclick="sendToElena()">发送</button>
+                </div>
+            </div>
+        </div>
     </div>
 
     <!-- 加载JS模块 -->
+    <script src="js/aiSystem.js"></script>
     <script src="js/gameState.js"></script>
     <script src="js/main.js"></script>
 </body>

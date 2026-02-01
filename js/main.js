@@ -366,3 +366,113 @@ window.performDevotionAction = performDevotionAction;
 window.saveGame = saveGame;
 window.loadGame = loadGame;
 window.resetGame = resetGame;
+
+// ============================================
+// 伊莲娜对话系统
+// ============================================
+
+function showElenaChat() {
+    document.getElementById('elenaPopup').style.display = 'flex';
+}
+
+function hideElenaChat() {
+    document.getElementById('elenaPopup').style.display = 'none';
+}
+
+async function askElena(questionType) {
+    const messagesContainer = document.getElementById('elenaMessages');
+    
+    // 添加加载状态
+    const loadingDiv = document.createElement('div');
+    loadingDiv.className = 'elena-message';
+    loadingDiv.id = 'elenaLoading';
+    loadingDiv.textContent = '伊莲娜正在思考...';
+    messagesContainer.appendChild(loadingDiv);
+    messagesContainer.scrollTop = messagesContainer.scrollHeight;
+    
+    // 调用AI
+    const response = await aiSystem.generateElenaTip(questionType);
+    
+    // 移除加载状态
+    document.getElementById('elenaLoading')?.remove();
+    
+    if (response) {
+        const messageDiv = document.createElement('div');
+        messageDiv.className = 'elena-message';
+        messageDiv.textContent = response;
+        messagesContainer.appendChild(messageDiv);
+    } else {
+        const messageDiv = document.createElement('div');
+        messageDiv.className = 'elena-message';
+        messageDiv.textContent = '连接失败了...你可以试试预设的问题。';
+        messagesContainer.appendChild(messageDiv);
+    }
+    
+    messagesContainer.scrollTop = messagesContainer.scrollHeight;
+}
+
+async function sendToElena() {
+    const input = document.getElementById('elenaInput');
+    const question = input.value.trim();
+    
+    if (!question) return;
+    
+    // 显示玩家的问题
+    const messagesContainer = document.getElementById('elenaMessages');
+    const playerDiv = document.createElement('div');
+    playerDiv.style.cssText = 'background: rgba(59, 130, 246, 0.2); border-radius: 12px; padding: 10px 15px; margin-bottom: 10px; color: #fff; text-align: right;';
+    playerDiv.textContent = '你：' + question;
+    messagesContainer.appendChild(playerDiv);
+    
+    input.value = '';
+    messagesContainer.scrollTop = messagesContainer.scrollHeight;
+    
+    // 调用AI（使用general类型，但传入用户问题）
+    const messagesDiv = document.createElement('div');
+    messagesDiv.className = 'elena-message';
+    messagesDiv.id = 'elenaLoading';
+    messagesDiv.textContent = '伊莲娜正在思考...';
+    messagesContainer.appendChild(messagesDiv);
+    messagesContainer.scrollTop = messagesContainer.scrollHeight;
+    
+    // 构建基于用户问题的prompt
+    const chaosLevel = gameState.character.chaos;
+    const turn = gameState.turn;
+    const currentCard = gameState.currentCard;
+    
+    const prompt = `你是战锤40K游戏的AI主持人伊莲娜，用姐姐的口吻（稍微调皮但关心）回答玩家的问题。
+
+当前游戏状态：
+- 回合：${turn}/14
+- 混沌值：${chaosLevel}
+- 当前任务：${currentCard?.name || '无'}
+- 任务类型：${currentCard?.type || '无'}
+
+玩家问题：${question}
+
+请用中文回答玩家的问题，符合伊莲娜的姐姐口吻，50-100字。`;
+    
+    const response = await aiSystem.callQwen(prompt, 250);
+    
+    document.getElementById('elenaLoading')?.remove();
+    
+    if (response) {
+        const messageDiv = document.createElement('div');
+        messageDiv.className = 'elena-message';
+        messageDiv.textContent = response;
+        messagesContainer.appendChild(messageDiv);
+    } else {
+        const messageDiv = document.createElement('div');
+        messageDiv.className = 'elena-message';
+        messageDiv.textContent = '姐姐今天有点累了...换别的问题吧。';
+        messagesContainer.appendChild(messageDiv);
+    }
+    
+    messagesContainer.scrollTop = messagesContainer.scrollHeight;
+}
+
+// 导出伊莲娜对话函数
+window.showElenaChat = showElenaChat;
+window.hideElenaChat = hideElenaChat;
+window.askElena = askElena;
+window.sendToElena = sendToElena;
