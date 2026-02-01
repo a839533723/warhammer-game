@@ -1,0 +1,382 @@
+/* 全局样式 */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Segoe UI', 'Microsoft YaHei', sans-serif;
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+    min-height: 100vh;
+    color: #e0e0e0;
+}
+
+/* 游戏容器 */
+.game-container {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 20px;
+    min-height: 100vh;
+}
+
+/* 标题 */
+.game-header {
+    text-align: center;
+    padding: 20px;
+    background: linear-gradient(135deg, #e94560 0%, #c23a51 100%);
+    border-radius: 12px;
+    margin-bottom: 20px;
+    box-shadow: 0 4px 20px rgba(233, 69, 96, 0.3);
+}
+
+.game-header h1 {
+    font-size: 28px;
+    color: #fff;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.subtitle {
+    font-size: 14px;
+    color: rgba(255, 255, 255, 0.8);
+    margin-top: 5px;
+}
+
+/* 状态面板 */
+.status-panel {
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 20px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.character-status {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    margin-bottom: 15px;
+}
+
+.character-avatar {
+    font-size: 48px;
+    width: 60px;
+    height: 60px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+}
+
+.character-info {
+    flex: 1;
+}
+
+.character-name {
+    font-size: 20px;
+    font-weight: bold;
+    color: #fff;
+}
+
+.character-class {
+    font-size: 14px;
+    color: #a0a0a0;
+    margin: 2px 0;
+}
+
+.character-stats {
+    display: flex;
+    gap: 15px;
+    margin-top: 5px;
+}
+
+.stat {
+    font-size: 14px;
+    padding: 4px 10px;
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 20px;
+}
+
+.stat.hp { color: #4ade80; }
+.stat.chaos { color: #a78bfa; }
+.stat.reputation { color: #fbbf24; }
+
+/* 资源状态 */
+.resource-status {
+    display: flex;
+    justify-content: space-around;
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 8px;
+    padding: 10px;
+}
+
+.resource-item {
+    text-align: center;
+}
+
+.resource-icon {
+    font-size: 24px;
+    display: block;
+}
+
+.resource-name {
+    font-size: 12px;
+    color: #a0a0a0;
+}
+
+.resource-value {
+    font-size: 18px;
+    font-weight: bold;
+    color: #fff;
+}
+
+/* 对话面板 */
+.dialog-panel {
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 12px;
+    margin-bottom: 20px;
+    max-height: 300px;
+    overflow-y: auto;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.dialog-title {
+    background: rgba(233, 69, 96, 0.2);
+    padding: 10px 15px;
+    font-size: 14px;
+    font-weight: bold;
+    color: #e94560;
+    border-radius: 12px 12px 0 0;
+    position: sticky;
+    top: 0;
+}
+
+.dialog-content {
+    padding: 15px;
+}
+
+.dialog-message {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 15px;
+    animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.dialog-avatar {
+    font-size: 32px;
+    width: 40px;
+    height: 40px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.dialog-message.npc .dialog-avatar {
+    background: linear-gradient(135deg, #4ade80 0%, #22c55e 100%);
+}
+
+.dialog-message.player .dialog-avatar {
+    background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+}
+
+.dialog-message.system .dialog-avatar {
+    background: linear-gradient(135deg, #a78bfa 0%, #8b5cf6 100%);
+}
+
+.dialog-text {
+    flex: 1;
+    line-height: 1.6;
+    font-size: 14px;
+    color: #e0e0e0;
+    background: rgba(255, 255, 255, 0.05);
+    padding: 12px;
+    border-radius: 8px;
+}
+
+/* 行动面板 */
+.action-panel {
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 20px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.action-title {
+    font-size: 14px;
+    color: #a0a0a0;
+    margin-bottom: 15px;
+}
+
+.action-categories {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 15px;
+    flex-wrap: wrap;
+}
+
+.action-category {
+    flex: 1;
+    min-width: 80px;
+    padding: 12px 10px;
+    background: rgba(0, 0, 0, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 5px;
+}
+
+.action-category:hover {
+    background: rgba(233, 69, 96, 0.2);
+    border-color: #e94560;
+    transform: translateY(-2px);
+}
+
+.action-category.active {
+    background: #e94560;
+    border-color: #e94560;
+}
+
+.category-icon {
+    font-size: 24px;
+}
+
+.category-name {
+    font-size: 12px;
+    color: #a0a0a0;
+}
+
+.action-category:hover .category-name,
+.action-category.active .category-name {
+    color: #fff;
+}
+
+/* 行动列表 */
+.action-list {
+    display: grid;
+    gap: 10px;
+}
+
+.action-btn {
+    width: 100%;
+    padding: 15px;
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-align: left;
+    font-size: 14px;
+    color: #e0e0e0;
+}
+
+.action-btn:hover {
+    background: rgba(233, 69, 96, 0.2);
+    border-color: #e94560;
+    transform: translateX(5px);
+}
+
+.action-cost {
+    float: right;
+    font-size: 12px;
+    color: #a78bfa;
+}
+
+/* 进度面板 */
+.progress-panel {
+    display: flex;
+    justify-content: space-around;
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 12px;
+    padding: 15px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.progress-item {
+    text-align: center;
+}
+
+.progress-label {
+    font-size: 12px;
+    color: #a0a0a0;
+    display: block;
+}
+
+.progress-value {
+    font-size: 24px;
+    font-weight: bold;
+    color: #fff;
+}
+
+.progress-max {
+    font-size: 16px;
+    color: #a0a0a0;
+}
+
+/* 混沌条 */
+.chaos-bar {
+    width: 80px;
+    height: 8px;
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 4px;
+    margin-top: 5px;
+    overflow: hidden;
+}
+
+.chaos-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #a78bfa 0%, #8b5cf6 50%, #7c3aed 100%);
+    border-radius: 4px;
+    transition: width 0.3s ease;
+}
+
+/* 滚动条样式 */
+.dialog-panel::-webkit-scrollbar {
+    width: 6px;
+}
+
+.dialog-panel::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.1);
+    border-radius: 3px;
+}
+
+.dialog-panel::-webkit-scrollbar-thumb {
+    background: #e94560;
+    border-radius: 3px;
+}
+
+/* 响应式 */
+@media (max-width: 600px) {
+    .game-container {
+        padding: 10px;
+    }
+    
+    .game-header h1 {
+        font-size: 22px;
+    }
+    
+    .action-categories {
+        flex-wrap: wrap;
+    }
+    
+    .action-category {
+        min-width: 60px;
+        padding: 10px 5px;
+    }
+}
