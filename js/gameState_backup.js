@@ -106,216 +106,6 @@ let gameState = {
     }
 };
 
-// ============================================
-// UI辅助函数（必须在gameState.js中定义，因为先加载）
-// ============================================
-
-function addDialog(type, avatar, text) {
-    const dialogContent = document.getElementById('dialogContent');
-    if (!dialogContent) return;
-    
-    const messageDiv = document.createElement('div');
-    messageDiv.className = 'dialog-message ' + type;
-    messageDiv.innerHTML = '<span class="dialog-avatar">' + avatar + '</span><div class="dialog-text">' + text.replace(/\n/g, '<br>') + '</div>';
-    dialogContent.appendChild(messageDiv);
-    
-    const dialogPanel = document.getElementById('dialogPanel');
-    if (dialogPanel && dialogPanel.querySelector) {
-        dialogPanel.querySelector('.dialog-content').scrollTop = dialogPanel.querySelector('.dialog-content').scrollHeight;
-    }
-}
-
-function updateUI() {
-    if (!gameState) return;
-    
-    // 角色信息
-    const charName = document.getElementById('charName');
-    const charClass = document.getElementById('charClass');
-    const hpValue = document.getElementById('hpValue');
-    const chaosValue = document.getElementById('chaosValue');
-    const faithValue = document.getElementById('faithValue');
-    
-    if (charName) charName.textContent = gameState.character.name;
-    if (charClass) charClass.textContent = gameState.character.class + ' Lv.' + gameState.character.level;
-    if (hpValue) hpValue.textContent = gameState.character.hp;
-    if (chaosValue) chaosValue.textContent = gameState.character.chaos;
-    if (faithValue) faithValue.textContent = gameState.character.faith;
-    
-    // 资源
-    const materialValue = document.getElementById('materialValue');
-    const intelligenceValue = document.getElementById('intelligenceValue');
-    const faithPointsValue = document.getElementById('faithPointsValue');
-    
-    if (materialValue) materialValue.textContent = gameState.resources.materials;
-    if (intelligenceValue) intelligenceValue.textContent = gameState.resources.intelligence;
-    if (faithPointsValue) faithPointsValue.textContent = gameState.resources.faithPoints;
-    
-    // 混沌进度条
-    updateChaosUI();
-    
-    // 回合
-    const turnNumber = document.getElementById('turnNumber');
-    const chaosProgress = document.getElementById('chaosProgress');
-    
-    if (turnNumber) turnNumber.textContent = gameState.turn;
-    if (chaosProgress) chaosProgress.textContent = gameState.character.chaos;
-    
-    // 当前任务卡
-    updateCurrentCardUI();
-    
-    // 调查系统
-    updateInvestigationUI();
-    
-    // 追随者
-    updateFollowersUI();
-}
-
-function updateChaosUI() {
-    const chaosFill = document.getElementById('chaosFill');
-    const chaosBarValue = document.getElementById('chaosBarValue');
-    const chaosPhaseLabel = document.getElementById('chaosPhaseLabel');
-    
-    if (!chaosFill || !chaosBarValue || !chaosPhaseLabel) return;
-    
-    const chaos = gameState.character.chaos;
-    chaosFill.style.width = chaos + '%';
-    chaosBarValue.textContent = chaos;
-    
-    let phase = '纯净';
-    let color = '#8b5cf6';
-    
-    if (chaos >= 80) { phase = '堕落'; color = '#dc2626'; }
-    else if (chaos >= 60) { phase = '重腐'; color = '#ef4444'; }
-    else if (chaos >= 40) { phase = '中腐'; color = '#f97316'; }
-    else if (chaos >= 20) { phase = '轻腐'; color = '#eab308'; }
-    
-    chaosFill.style.background = color;
-    chaosPhaseLabel.textContent = '当前阶段：' + phase;
-    chaosPhaseLabel.style.color = color;
-}
-
-function updateCurrentCardUI() {
-    const cardArea = document.getElementById('currentCardArea');
-    const cardInfo = document.getElementById('cardInfo');
-    const cardTimer = document.getElementById('cardTimer');
-    
-    if (!cardArea || !cardInfo || !cardTimer) return;
-    
-    const card = gameState.currentCard;
-    
-    if (!card) {
-        cardArea.innerHTML = '<p class="empty-text">等待抽取新任务...</p>';
-        cardInfo.textContent = '暂无任务';
-        cardTimer.textContent = '-';
-        return;
-    }
-    
-    const typeColors = {
-        chaos: '#ef4444',
-        faith: '#fbbf24',
-        combat: '#3b82f6',
-        devotion: '#ec4899'
-    };
-    
-    const typeNames = {
-        chaos: '混沌',
-        faith: '信仰',
-        combat: '战斗',
-        devotion: '眷属'
-    };
-    
-    let rewardsHTML = '';
-    if (card.reward) {
-        if (card.reward.materials) rewardsHTML += '<div class="reward-item">📦 成功：物资+' + card.reward.materials + '</div>';
-        if (card.reward.chaosReduction) rewardsHTML += '<div class="reward-item">✨ 成功：混沌值-' + card.reward.chaosReduction + '</div>';
-        if (card.reward.faith) rewardsHTML += '<div class="reward-item">⭐ 成功：信仰+' + card.reward.faith + '</div>';
-        if (card.reward.follower) rewardsHTML += '<div class="reward-item">👥 成功：获得追随者</div>';
-    }
-    
-    let penaltyHTML = '';
-    if (card.penalty && card.penalty.chaosIncrease) {
-        penaltyHTML = '<div class="penalty-item">💀 失败：混沌值+' + card.penalty.chaosIncrease + '</div>';
-    }
-    
-    cardArea.innerHTML = `
-        <div class="current-card-display ${card.type}" style="border-color: ${typeColors[card.type]}">
-            <div class="current-card-header">
-                <span class="current-card-type ${card.type}">【${typeNames[card.type]}卡】</span>
-                <span class="current-card-difficulty">${card.difficulty}</span>
-            </div>
-            <div class="current-card-name">${card.name}</div>
-            <div class="current-card-description">${card.description}</div>
-            <div class="current-card-progress">
-                <span>任务进度：${gameState.cardProgress}/${gameState.maxCardProgress}回合</span>
-                <span>剩余：${gameState.maxCardProgress - gameState.cardProgress}回合</span>
-            </div>
-            <div class="current-card-rewards">
-                ${rewardsHTML}
-                ${penaltyHTML}
-            </div>
-        </div>
-    `;
-    
-    cardInfo.textContent = `【${typeNames[card.type]}】${card.name}`;
-    cardTimer.textContent = `剩余回合：${gameState.maxCardProgress - gameState.cardProgress}`;
-}
-
-function updateInvestigationUI() {
-    const section = document.getElementById('investigationSection');
-    if (!section) return;
-    
-    section.style.display = (gameState.currentCard && gameState.currentCard.type === 'chaos') ? 'block' : 'none';
-    
-    const suspects = ['tam', 'carl', 'yuri'];
-    for (const id of suspects) {
-        const npc = gameState.npcs[id];
-        if (!npc) continue;
-        
-        const suspicionEl = document.getElementById(id + 'Suspicion');
-        const trustEl = document.getElementById(id + 'Trust');
-        
-        if (suspicionEl) suspicionEl.textContent = npc.suspicion;
-        if (trustEl) trustEl.textContent = npc.trust;
-    }
-    
-    const evidenceList = document.getElementById('evidenceList');
-    if (evidenceList && gameState.investigation.evidence.length > 0) {
-        evidenceList.innerHTML = gameState.investigation.evidence.map(e => `
-            <div class="evidence-item ${e.isFalse ? 'false' : ''}">
-                <div class="evidence-text">${e.text}</div>
-                <div class="evidence-source">来自：${gameState.npcs[e.npcId].name} ${e.isFalse ? '（可能是幻觉）' : ''}</div>
-            </div>
-        `).join('');
-    }
-}
-
-function updateFollowersUI() {
-    const panel = document.getElementById('followersPanel');
-    if (!panel) return;
-    
-    const followers = gameState.character.followers;
-    
-    if (!followers || followers.length === 0) {
-        panel.innerHTML = '<p class="empty-text">还没有追随者...</p>';
-        return;
-    }
-    
-    panel.innerHTML = followers.map(f => `
-        <div class="follower-card">
-            <div class="follower-avatar">${f.type === 'combat' ? '⚔️' : '🔮'}</div>
-            <div class="follower-info">
-                <div class="follower-name">${f.name}</div>
-                <div class="follower-type">${f.type === 'combat' ? '战斗追随者' : '灵能追随者'}</div>
-                <div class="follower-bonus">${f.attack ? '+' + f.attack + ' 攻击' : ''} ${f.ability ? f.ability : ''}</div>
-            </div>
-        </div>
-    `).join('');
-}
-
-// ============================================
-// 游戏逻辑函数
-// ============================================
-
 /**
  * 初始化游戏
  */
@@ -374,11 +164,14 @@ function showDefaultGuide() {
 • ⚔️ 战斗卡：击败敌人
 • 💕 眷属卡：获取追随者
 
-你准备好了吗，战士？
-
-【点击下方"开始任务"按钮开始游戏】`;
+你准备好了吗，战士？`;
 
     addDialog('npc', '👩', guideText);
+    
+    // 添加开始按钮
+    setTimeout(() => {
+        addDialog('system', '🎮', '【点击下方"开始任务"按钮继续】');
+    }, 1000);
 }
 
 /**
@@ -743,7 +536,7 @@ function vote(npcId) {
         } else {
             // 处决错误
             addDialog('system', '❌', `处决错误！${npc.name}是清白的！`);
-            addDialog('system', '💀', `${npc.name}临死前喊着："我是清白的..."`);
+            addDialog('system', '💀', `${npc.name}临死前喊着：“我是清白的...”`);
             addDialog('system', '☠️', `混沌值+30，因为你处决了无辜者`);
             
             gameState.character.chaos = Math.min(100, gameState.character.chaos + 30);
@@ -805,7 +598,7 @@ function completeCard(success) {
     
     // 询问是否继续
     setTimeout(() => {
-        addDialog('system', '🎮', '是否继续下一张卡牌？点击"开始任务"继续');
+        addDialog('system', '🎮', '是否继续下一张卡牌？');
     }, 500);
 }
 
@@ -873,32 +666,6 @@ function endTurn() {
     updateUI();
 }
 
-// 存档/读档功能
-function saveGame() {
-    localStorage.setItem('warhammer_game_state', JSON.stringify(gameState));
-    addDialog('system', '💾', '游戏已保存！');
-}
-
-function loadGame() {
-    const saved = localStorage.getItem('warhammer_game_state');
-    if (saved) {
-        try {
-            const parsed = JSON.parse(saved);
-            gameState = { ...gameState, ...parsed };
-            addDialog('system', '📂', '存档加载成功！');
-        } catch (e) {
-            addDialog('system', '⚠️', '存档已损坏，无法加载。');
-        }
-    }
-}
-
-function resetGame() {
-    if (confirm('确定要重置游戏吗？所有进度将丢失！')) {
-        localStorage.removeItem('warhammer_game_state');
-        location.reload();
-    }
-}
-
 // 导出到全局
 window.gameState = gameState;
 window.initGame = initGame;
@@ -913,8 +680,3 @@ window.interrogate = interrogate;
 window.vote = vote;
 window.completeCard = completeCard;
 window.endTurn = endTurn;
-window.saveGame = saveGame;
-window.loadGame = loadGame;
-window.resetGame = resetGame;
-window.addDialog = addDialog;
-window.updateUI = updateUI;
