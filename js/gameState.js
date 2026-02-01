@@ -127,28 +127,66 @@ function initGame() {
  * 引导阶段 - AI介绍背景
  */
 function startGuidePhase() {
-    // 引导阶段由AI主持，这里只显示初始界面
-    addDialog('system', '🌌', '游戏加载中...');
-    addDialog('system', '🤖', '正在连接AI主持人伊莲娜...');
+    // 显示开场白
+    addDialog('system', '🌌', '【战锤40K：虚空黎明 v0.3】');
+    addDialog('system', '👩', '你好，战士。');
     
-    // 调用千问API获取引导文本
-    callAIGuide();
+    // 显示预设开场白（同时尝试调用AI）
+    setTimeout(() => {
+        showDefaultGuide();
+        
+        // 尝试调用AI（异步）
+        callAIGuide().catch(() => {
+            console.log('AI调用失败，使用预设文本');
+        });
+    }, 500);
 }
 
 /**
- * 调用AI生成引导文本
+ * 显示默认引导文本（当AI不可用时）
+ */
+function showDefaultGuide() {
+    const guideText = `黑暗中，你睁开双眼，感受到冰冷的金属地板贴着你的肌肤。
+
+你是${gameState.character.class}，帝国最忠诚的战士之一。此刻你身处麦加托普星球——极限战士战团的母星，但这里已经不再是曾经的圣地。
+
+混沌的阴影正在蔓延。兽人的入侵、混沌信徒的渗透、内鬼的背叛...这座星球正处在崩溃的边缘。
+
+你的任务是通过完成各种挑战卡牌来生存：
+• 🃏 每回合抽取一张任务卡牌
+• ⏰ 必须在3个回合内完成任务
+• 💀 超时未完成：混沌值+30
+• 🔮 混沌值达到100：你将堕落
+
+任务类型：
+• 🔴 混沌卡：找出内鬼（狼人杀）
+• 🟡 信仰卡：完成帝皇的旨意  
+• ⚔️ 战斗卡：击败敌人
+• 💕 眷属卡：获取追随者
+
+你准备好了吗，战士？`;
+
+    addDialog('npc', '👩', guideText);
+    
+    // 添加开始按钮
+    setTimeout(() => {
+        addDialog('system', '🎮', '【点击下方"开始任务"按钮继续】');
+    }, 1000);
+}
+
+/**
+ * 调用AI生成引导文本（异步，不阻塞显示）
  */
 async function callAIGuide() {
     const API_KEY = 'sk-7324d922204640fd87ad5ae868b82376';
     
-    const prompt = `你是战锤40K游戏的AI主持人伊莲娜。生成一段500字的沉浸式开场白，包含：
-1. 主角身份介绍（${gameState.character.class}）
+    const prompt = `你是战锤40K游戏的AI主持人伊莲娜。用200字左右的中文，生成一段沉浸式开场白，介绍：
+1. 主角身份（${gameState.character.class}）
 2. 当前环境的危险
 3. 混沌的威胁
-4. 引导玩家了解游戏机制
-5. 结束时询问玩家是否准备好开始
+4. 游戏基本规则
 
-用中文，富有沉浸感。`;
+用富有沉浸感的方式，不要太长。`;
 
     try {
         const response = await fetch('https://dashscope.aliyuncs.com/api/v1/services/aigc/text-generation/generation', {
@@ -165,50 +203,26 @@ async function callAIGuide() {
                     ]
                 },
                 parameters: {
-                    max_tokens: 1000,
+                    max_tokens: 500,
                     temperature: 0.7
                 }
             })
         });
 
         const data = await response.json();
-        const guideText = data.output?.text || '连接失败，请手动开始游戏。';
+        const guideText = data.output?.text;
         
-        // 显示引导文本
-        addDialog('npc', '👩', guideText);
-        
-        // 添加选项
-        setTimeout(() => {
-            addDialog('system', '🎮', '【选择】');
-            addDialog('player', '🗣️', '我准备好了，让我开始任务。');
-        }, 1000);
+        if (guideText) {
+            // 在预设文本后追加AI文本
+            setTimeout(() => {
+                addDialog('npc', '🤖', '【AI补充】' + guideText);
+            }, 1500);
+        }
         
     } catch (error) {
         console.error('AI调用失败:', error);
-        addDialog('system', '⚠️', 'AI连接失败，使用预设文本。');
-        showDefaultGuide();
+        // 静默失败，使用预设文本
     }
-}
-
-/**
- * 显示默认引导文本（当AI不可用时）
- */
-function showDefaultGuide() {
-    const guideText = `黑暗中，你睁开双眼。
-
-你是${gameState.character.class}，帝国最精锐的战士。此刻你身处麦加托普星球——极限战士战团的母星，但这里已经不再是曾经的圣地。
-
-混沌的阴影正在蔓延。兽人的入侵、混沌信徒的渗透、内鬼的背叛...这座星球正处在崩溃的边缘。
-
-你的任务是：
-- 完成各种挑战卡牌任务
-- 在3个回合内完成每张卡牌的要求
-- 找出隐藏的混沌奸细（混沌卡任务）
-- 避免混沌值过高（超过100则堕落）
-
-你准备好了吗，战士？`;
-
-    addDialog('npc', '👩', guideText);
 }
 
 /**

@@ -8,7 +8,39 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // 初始化游戏
     initGame();
+    
+    // 添加"开始任务"按钮到页面底部
+    addStartButton();
 });
+
+/**
+ * 添加开始任务按钮
+ */
+function addStartButton() {
+    // 检查是否已有按钮
+    if (document.getElementById('startGameBtn')) return;
+    
+    const progressPanel = document.querySelector('.progress-panel');
+    if (!progressPanel) return;
+    
+    const startBtn = document.createElement('button');
+    startBtn.id = 'startGameBtn';
+    startBtn.className = 'action-btn';
+    startBtn.style.cssText = 'background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%); color: #fff; font-size: 16px; padding: 15px 30px; width: 100%; margin-top: 15px;';
+    startBtn.innerHTML = '🎮 开始任务';
+    startBtn.onclick = function() {
+        if (gameState.phase === 'guide') {
+            this.style.display = 'none';
+            startMainPhase();
+        } else if (gameState.currentCard) {
+            endTurn();
+        } else {
+            drawCard();
+        }
+    };
+    
+    progressPanel.parentNode.insertBefore(startBtn, progressPanel.nextSibling);
+}
 
 /**
  * 显示类目
