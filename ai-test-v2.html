@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>AI连接测试 - 战锤40K</title>
+    <style>
+        * { box-sizing: border-box; }
+        body { 
+            font-family: 'Segoe UI', sans-serif; 
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            min-height: 100vh;
+            margin: 0;
+            padding: 40px 20px;
+            color: #fff;
+        }
+        .container { max-width: 800px; margin: 0 auto; }
+        h1 { text-align: center; color: #a78bfa; margin-bottom: 40px; }
+        
+        .test-card {
+            background: rgba(255,255,255,0.1);
+            border-radius: 12px;
+            padding: 20px;
+            margin: 20px 0;
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+        
+        .test-card h2 { 
+            color: #fbbf24; 
+            margin-top: 0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        button {
+            background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: transform 0.2s;
+        }
+        button:hover { transform: scale(1.05); }
+        button:disabled { opacity: 0.5; cursor: not-allowed; }
+        
+        .result {
+            background: rgba(0,0,0,0.3);
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 15px;
+            font-family: monospace;
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
+        
+        .success { border-left: 4px solid #4ade80; }
+        .error { border-left: 4px solid #ef4444; }
+        .pending { border-left: 4px solid #fbbf24; }
+        
+        .status-badge {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        .status-ok { background: #4ade80; color: #000; }
+        .status-fail { background: #ef4444; color: #fff; }
+        .status-wait { background: #fbbf24; color: #000; }
+        
+        .tips {
+            background: rgba(139, 92, 246, 0.2);
+            border: 1px solid #8b5cf6;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+        }
+        .tips h3 { margin-top: 0; color: #a78bfa; }
+        .tips code { 
+            background: rgba(0,0,0,0.3); 
+            padding: 2px 6px; 
+            border-radius: 4px; 
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧪 AI连接测试 - 战锤40K</h1>
+        
+        <!-- 测试1: 后端连接 -->
+        <div class="test-card" id="test1">
+            <h2>1️⃣ 测试后端连接</h2>
+            <p>后端地址: <code id="backendUrl">http://119.45.203.40:5000/api/chat</code></p>
+            <button onclick="testBackend()">点击测试</button>
+            <div class="result" id="result1">点击按钮开始测试...</div>
+        </div>
+        
+        <!-- 测试2: 完整API调用 -->
+        <div class="test-card" id="test2">
+            <h2>2️⃣ 测试AI生成</h2>
+            <p>发送问题给千问API，测试AI是否能正常生成文本</p>
+            <button onclick="testAI()">点击测试</button>
+            <div class="result" id="result2">点击按钮开始测试...</div>
+        </div>
+        
+        <!-- 测试3: 游戏模拟 -->
+        <div class="test-card" id="test3">
+            <h2>3️⃣ 测试游戏AI调用</h2>
+            <p>模拟游戏中调用伊莲娜对话</p>
+            <button onclick="testGameAI()">点击测试</button>
+            <div class="result" id="result3">点击按钮开始测试...</div>
+        </div>
+        
+        <div class="tips">
+            <h3>💡 排查指南</h3>
+            <p><strong>如果测试1失败</strong>：可能是网络问题或防火墙未开放</p>
+            <p><strong>如果测试2失败</strong>：API密钥或请求格式问题</p>
+            <p><strong>如果测试3失败</strong>：浏览器安全策略问题</p>
+            <p><strong>都失败但curl测试成功</strong>：可能是浏览器无法访问该IP</p>
+        </div>
+    </div>
+
+    <script>
+        const BACKEND_URL = 'http://119.45.203.40:5000/api/chat';
+        
+        function updateResult(id, text, status) {
+            const el = document.getElementById(id);
+            el.textContent = text;
+            el.className = 'result ' + status;
+        }
+        
+        async function testBackend() {
+            updateResult('result1', '正在连接后端...', 'pending');
+            try {
+                const response = await fetch(BACKEND_URL, {
+                    method: 'POST',
+                    mode: 'cors',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ prompt: '你好' })
+                });
+                
+                const data = await response.json();
+                if (data.success || data.message) {
+                    updateResult('result1', '✅ 后端连接成功!\n\n响应: ' + JSON.stringify(data, null, 2), 'success');
+                } else {
+                    updateResult('result1', '❌ 后端返回错误:\n' + JSON.stringify(data, null, 2), 'error');
+                }
+            } catch (error) {
+                updateResult('result1', '❌ 连接失败!\n\n错误类型: ' + error.name + '\n错误信息: ' + error.message + '\n\n可能原因:\n1. 网络无法访问119.45.203.40:5000\n2. 浏览器被防火墙拦截\n3. CORS策略限制', 'error');
+            }
+        }
+        
+        async function testAI() {
+            updateResult('result2', '正在调用AI...', 'pending');
+            try {
+                const response = await fetch(BACKEND_URL, {
+                    method: 'POST',
+                    mode: 'cors',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        prompt: '你是战锤40K游戏的AI主持人伊莲娜，用姐姐的口吻说一句鼓励的话',
+                        max_tokens: 200
+                    })
+                });
+                
+                const data = await response.json();
+                if (data.success && data.text) {
+                    updateResult('result2', '✅ AI调用成功!\n\n伊莲娜说: ' + data.text, 'success');
+                } else {
+                    updateResult('result2', '❌ AI返回错误:\n' + JSON.stringify(data, null, 2), 'error');
+                }
+            } catch (error) {
+                updateResult('result2', '❌ AI调用失败!\n\n错误: ' + error.message, 'error');
+            }
+        }
+        
+        async function testGameAI() {
+            updateResult('result3', '正在模拟游戏AI调用...', 'pending');
+            try {
+                // 模拟游戏中的NPC对话生成
+                const response = await fetch(BACKEND_URL, {
+                    method: 'POST',
+                    mode: 'cors',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        prompt: `你是战锤40K游戏中的NPC塔姆。
+
+请生成一段对话（80-150字），在被玩家审问时的反应。
+
+要求：
+- 符合NPC性格（忠诚但紧张）
+- 用中文
+- 不要加角色名`,
+                        max_tokens: 300
+                    })
+                });
+                
+                const data = await response.json();
+                if (data.success && data.text) {
+                    updateResult('result3', '✅ 游戏AI测试成功!\n\nNPC塔姆说: ' + data.text, 'success');
+                } else {
+                    updateResult('result3', '❌ 游戏AI返回错误:\n' + JSON.stringify(data, null, 2), 'error');
+                }
+            } catch (error) {
+                updateResult('result3', '❌ 游戏AI调用失败!\n\n错误: ' + error.message, 'error');
+            }
+        }
+        
+        // 页面加载时显示当前配置
+        document.getElementById('backendUrl').textContent = BACKEND_URL;
+    </script>
+</body>
+</html>
