@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>战锤40K：虚空黎明</title>
+    <title>战锤40K：虚空黎明 v0.2</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -11,7 +11,7 @@
         <!-- 标题 -->
         <header class="game-header">
             <h1>⚔️ 战锤40K：虚空黎明</h1>
-            <div class="subtitle">战争时代 · 荷鲁斯之乱</div>
+            <div class="subtitle">战争时代 · 荷鲁斯之乱 v0.2（抽卡版）</div>
         </header>
 
         <!-- 状态面板 -->
@@ -28,22 +28,27 @@
                     </div>
                 </div>
             </div>
-            <div class="resource-status">
-                <div class="resource-item">
-                    <span class="resource-icon">📦</span>
-                    <span class="resource-name">物资</span>
-                    <span class="resource-value" id="materialValue">20</span>
-                </div>
-                <div class="resource-item">
-                    <span class="resource-icon">🔵</span>
-                    <span class="resource-name">灵魂点</span>
-                    <span class="resource-value" id="soulValue">0</span>
-                </div>
-                <div class="resource-item">
-                    <span class="resource-icon">🏰</span>
-                    <span class="resource-name">巢穴</span>
-                    <span class="resource-value" id="baseLevel">Lv.1</span>
-                </div>
+            
+            <!-- 资源面板（新系统） -->
+            <div class="resource-panel">
+                <!-- 资源由JS动态生成 -->
+            </div>
+        </div>
+
+        <!-- 混沌进度条（新系统） -->
+        <div class="chaos-container">
+            <!-- 混沌进度条由JS动态生成 -->
+        </div>
+
+        <!-- 抽卡区域（新系统） -->
+        <div class="card-section">
+            <div class="section-title">🃏 抽卡区域（每回合抽取3张卡牌）</div>
+            <div class="card-info">
+                <span>💡 提示：点击卡牌查看详情，选择使用或弃牌</span>
+                <span id="cardsRemaining">剩余卡牌：50</span>
+            </div>
+            <div id="cardArea">
+                <!-- 手牌由JS动态生成 -->
             </div>
         </div>
 
@@ -54,16 +59,18 @@
                 <div class="dialog-message system">
                     <span class="dialog-avatar">🌌</span>
                     <div class="dialog-text">
-                        欢迎来到战锤40K：虚空黎明！
+                        欢迎来到战锤40K：虚空黎明 v0.2！
                         <br><br>
-                        你好，钛-7。我是伊莲娜，你的游戏主持人。
+                        新版本重磅更新：
+                        <br>🃏 <strong>抽卡系统</strong> - 每回合抽取3张卡牌，选择使用或弃牌
+                        <br>🔮 <strong>混沌系统</strong> - 混沌值影响你的行动和结局
+                        <br>👥 <strong>追随者系统</strong> - 招募追随者获得战斗加成
                         <br><br>
-                        在这个游戏中，你将扮演一位极限战士，在荷鲁斯之乱的动荡时期，通过战斗、建设、选择来建立你的势力，揭开自己的命运。
-                        <br><br>
-                        游戏支持以下操作：
-                        <br>• 查看状态 - 了解你的角色状态
-                        <br>• 执行行动 - 战斗、建筑、调查、探索
-                        <br>• 存档读档 - 保存和加载进度
+                        游戏规则：
+                        <br>• 每回合抽取3张卡牌，选择1-2张使用
+                        <br>• 合理管理资源，避免混沌值过高
+                        <br>• 招募追随者，增强战斗力
+                        <br>• 揭露隐藏的内鬼，找到真相
                         <br><br>
                         准备好了吗？让我们开始吧！
                     </div>
@@ -71,57 +78,53 @@
             </div>
         </div>
 
-        <!-- 行动面板 -->
+        <!-- 追随者面板（新系统） -->
+        <div class="followers-section">
+            <div class="section-title">👥 追随者面板</div>
+            <div class="followers-panel">
+                <!-- 追随者由JS动态生成 -->
+            </div>
+        </div>
+
+        <!-- 行动面板（兼容旧系统） -->
         <div class="action-panel">
-            <div class="action-title">🎮 行动选择（每回合最多3个）</div>
+            <div class="action-title">🎮 行动选择（兼容旧系统）</div>
             <div class="action-categories">
-                <button class="action-category" onclick="showCategory('combat')">
-                    <span class="category-icon">⚔️</span>
-                    <span class="category-name">战斗</span>
-                </button>
-                <button class="action-category" onclick="showCategory('building')">
-                    <span class="category-icon">🏗️</span>
-                    <span class="category-name">建筑</span>
+                <button class="action-category" onclick="showCategory('system')">
+                    <span class="category-icon">⚙️</span>
+                    <span class="category-name">系统</span>
                 </button>
                 <button class="action-category" onclick="showCategory('investigation')">
                     <span class="category-icon">🔍</span>
                     <span class="category-name">调查</span>
                 </button>
-                <button class="action-category" onclick="showCategory('exploration')">
-                    <span class="category-icon">🗺️</span>
-                    <span class="category-name">探索</span>
-                </button>
-                <button class="action-category" onclick="showCategory('system')">
-                    <span class="category-icon">⚙️</span>
-                    <span class="category-name">系统</span>
+                <button class="action-category" onclick="showCategory('building')">
+                    <span class="category-icon">🏗️</span>
+                    <span class="category-name">建筑</span>
                 </button>
             </div>
             
-            <!-- 战斗行动 -->
-            <div class="action-list" id="combat-actions" style="display: none;">
-                <button class="action-btn" onclick="performAction('combat', 'attack_chaos')">
-                    🔫 迎击混沌入侵者
-                    <span class="action-cost">战斗任务</span>
+            <!-- 系统行动 -->
+            <div class="action-list" id="system-actions" style="display: none;">
+                <button class="action-btn" onclick="saveGame()">
+                    💾 存档
+                    <span class="action-cost">保存进度</span>
                 </button>
-                <button class="action-btn" onclick="performAction('combat', 'defend_base')">
-                    🛡️ 防守要塞入口
-                    <span class="action-cost">防御任务</span>
+                <button class="action-btn" onclick="loadGame()">
+                    📂 读档
+                    <span class="action-cost">加载进度</span>
                 </button>
-            </div>
-
-            <!-- 建筑行动 -->
-            <div class="action-list" id="building-actions" style="display: none;">
-                <button class="action-btn" onclick="performAction('building', 'upgrade_base')">
-                    🏗️ 升级巢穴
-                    <span class="action-cost">消耗15物资</span>
+                <button class="action-btn" onclick="showFullStatus()">
+                    📊 查看完整状态
+                    <span class="action-cost">角色详情</span>
                 </button>
-                <button class="action-btn" onclick="performAction('building', 'build_training')">
-                    🎯 建造训练场
-                    <span class="action-cost">消耗10物资</span>
+                <button class="action-btn" onclick="endTurn()">
+                    ⏭️ 回合结束
+                    <span class="action-cost">新回合</span>
                 </button>
-                <button class="action-btn" onclick="performAction('building', 'build_workshop')">
-                    ⚙️ 建造工坊
-                    <span class="action-cost">消耗10物资</span>
+                <button class="action-btn" onclick="resetGame()">
+                    🔄 重置游戏
+                    <span class="action-cost">清空存档</span>
                 </button>
             </div>
 
@@ -141,31 +144,19 @@
                 </button>
             </div>
 
-            <!-- 探索行动 -->
-            <div class="action-list" id="exploration-actions" style="display: none;">
-                <button class="action-btn" onclick="performAction('exploration', 'explore_wilderness')">
-                    🌲 探索北境荒野
-                    <span class="action-cost">探索任务</span>
+            <!-- 建筑行动 -->
+            <div class="action-list" id="building-actions" style="display: none;">
+                <button class="action-btn" onclick="performAction('building', 'upgrade_base')">
+                    🏗️ 升级巢穴
+                    <span class="action-cost">消耗15物资</span>
                 </button>
-                <button class="action-btn" onclick="performAction('exploration', 'searchruins')">
-                    🏛️ 搜索古代遗迹
-                    <span class="action-cost">探索任务</span>
+                <button class="action-btn" onclick="performAction('building', 'build_training')">
+                    🎯 建造训练场
+                    <span class="action-cost">消耗10物资</span>
                 </button>
-            </div>
-
-            <!-- 系统行动 -->
-            <div class="action-list" id="system-actions" style="display: none;">
-                <button class="action-btn" onclick="performAction('system', 'save')">
-                    💾 存档
-                    <span class="action-cost">保存进度</span>
-                </button>
-                <button class="action-btn" onclick="performAction('system', 'load')">
-                    📂 读档
-                    <span class="action-cost">加载进度</span>
-                </button>
-                <button class="action-btn" onclick="performAction('system', 'status')">
-                    📊 查看完整状态
-                    <span class="action-cost">角色详情</span>
+                <button class="action-btn" onclick="performAction('building', 'build_workshop')">
+                    ⚙️ 建造工坊
+                    <span class="action-cost">消耗10物资</span>
                 </button>
             </div>
         </div>
@@ -177,19 +168,18 @@
                 <span class="progress-value" id="turnNumber">1</span>
             </div>
             <div class="progress-item">
-                <span class="progress-label">已用行动</span>
-                <span class="progress-value" id="actionsUsed">0</span>
+                <span class="progress-label">卡牌</span>
+                <span class="progress-value" id="handSize">0</span>
                 <span class="progress-max">/3</span>
-            </div>
-            <div class="progress-item">
-                <span class="progress-label">混沌值</span>
-                <div class="chaos-bar">
-                    <div class="chaos-fill" id="chaosFill" style="width: 0%"></div>
-                </div>
             </div>
         </div>
     </div>
 
-    <script src="game.js"></script>
+    <!-- 加载JS模块 -->
+    <script src="js/gameState.js"></script>
+    <script src="js/resourceSystem.js"></script>
+    <script src="js/chaosSystem.js"></script>
+    <script src="js/cardSystem.js"></script>
+    <script src="js/main.js"></script>
 </body>
 </html>
