@@ -1,136 +1,14 @@
 /**
- * 战锤40K - 主入口
- * 简化的游戏主逻辑，模块化调用各系统
+ * 战锤40K - 主入口（v0.3 AI增强版）
  */
 
 // 等待DOM加载完成
 document.addEventListener('DOMContentLoaded', () => {
-    console.log('战锤40K已启动（模块化版本）');
+    console.log('战锤40K v0.3 启动中...');
     
-    // 初始化各系统
+    // 初始化游戏
     initGame();
-    
-    // 加载存档
-    loadGame();
-    
-    // 初始化抽卡
-    startTurn();
 });
-
-/**
- * 初始化游戏
- */
-function initGame() {
-    // 更新UI
-    updateUI();
-    
-    addDialog('system', '🌌', '欢迎回来，战士！你是极限战士钛-7，在荷鲁斯之乱的动荡时期醒来。');
-    addDialog('system', '📋', '【新系统已启用】');
-    addDialog('system', '🃏', '抽卡系统：每回合抽取3张卡牌，选择使用或弃牌');
-    addDialog('system', '🔮', '混沌系统：混沌值会影响你的行动和结局');
-    addDialog('system', '👥', '追随者系统：招募追随者获得加成');
-    
-    console.log('游戏初始化完成');
-}
-
-/**
- * 开始回合
- */
-function startTurn() {
-    // 重置行动计数
-    gameState.actionsUsed = 0;
-    
-    // 抽卡
-    cardSystem.drawCards(3);
-    
-    // 检查混沌审判倒计时
-    if (chaosSystem.judgmentTimer > 0) {
-        chaosSystem.judgmentTimer--;
-        if (chaosSystem.judgmentTimer <= 0) {
-            chaosSystem.executeJudgment();
-        }
-    }
-    
-    // 更新UI
-    updateUI();
-    
-    addDialog('system', '🔄', '回合 ' + gameState.turn + ' 开始！');
-    addDialog('system', '🃏', '你抽取了3张卡牌，请选择使用或弃牌。');
-}
-
-/**
- * 回合结束
- */
-function endTurn() {
-    // 建筑产出
-    const buildingOutput = resourceSystem.updateDailyProduction();
-    
-    // 随机事件
-    const randomEvent = Math.random();
-    let eventMessage = '';
-    
-    if (randomEvent < 0.15) {
-        const goodEvents = [
-            { text: '意外收获：路过商队送了你一些物资。', materials: 10 },
-            { text: '好消息：你的英勇事迹传开了，声望+5！', reputation: 5 },
-            { text: '发现：工坊里找到了隐藏的工具箱。', materials: 8 }
-        ];
-        const event = goodEvents[Math.floor(Math.random() * goodEvents.length)];
-        eventMessage = '。' + event.text;
-        if (event.materials) resourceSystem.modify('materials', event.materials);
-        if (event.reputation) resourceSystem.modify('reputation', event.reputation);
-    } else if (randomEvent < 0.25) {
-        const badEvents = [
-            { text: '袭击：一小股混沌信徒袭击了你的巢穴！', chaos: 5 },
-            { text: '损失：一些物资在仓库中腐烂了。', materials: -5 },
-            { text: '监视：你感觉到有人在暗中监视你...', chaos: 0 }
-        ];
-        const event = badEvents[Math.floor(Math.random() * badEvents.length)];
-        eventMessage = '。' + event.text;
-        if (event.chaos) chaosSystem.addChaos(event.chaos);
-        if (event.materials) resourceSystem.modify('materials', event.materials);
-    }
-    
-    // 混沌值自然恢复（低概率）
-    if (chaosSystem.chaosValue > 0 && Math.random() < 0.1) {
-        chaosSystem.purify(2);
-        eventMessage += '。净化仪式生效：混沌值-2';
-    }
-    
-    // 混沌幻觉
-    if (chaosSystem.phase === 'light' || chaosSystem.phase === 'corrupt' || chaosSystem.phase === 'heavy') {
-        if (Math.random() < 0.3) {
-            const hallucination = chaosSystem.generateHallucination();
-            eventMessage += '。幻觉：' + hallucination;
-        }
-    }
-    
-    // 混沌警告
-    let chaosWarning = '';
-    if (chaosSystem.chaosValue >= 50) {
-        const phaseInfo = chaosSystem.getPhaseInfo();
-        chaosWarning = '。警告：混沌值达到' + chaosSystem.chaosValue + '！当前阶段：' + phaseInfo.name;
-    }
-    
-    // 检查堕落
-    if (chaosSystem.chaosValue >= 100) {
-        addDialog('system', '☠️', '你已经堕落了...混沌吞噬了你的灵魂。');
-        addDialog('system', '💀', '【游戏结束】你的灵魂已经彻底堕落入混沌。');
-        return;
-    }
-    
-    // 显示回合总结
-    addDialog('system', '📊', '回合 ' + gameState.turn + ' 结束！');
-    addDialog('system', '🏭', '建筑产出：' + buildingOutput + eventMessage + chaosWarning);
-    addDialog('system', '📦', '当前物资：' + gameState.resources.materials.value + '，混沌值：' + chaosSystem.chaosValue + '/100');
-    
-    // 进入下一回合
-    gameState.turn++;
-    startTurn();
-    
-    updateUI();
-    saveGame();
-}
 
 /**
  * 显示类目
@@ -138,64 +16,12 @@ function endTurn() {
 function showCategory(category) {
     document.querySelectorAll('.action-list').forEach(list => list.style.display = 'none');
     document.querySelectorAll('.action-category').forEach(btn => btn.classList.remove('active'));
+    
     const actionList = document.getElementById(category + '-actions');
     if (actionList) actionList.style.display = 'grid';
+    
     const categoryBtn = document.querySelector('.action-category[onclick="showCategory(\'' + category + '\')"]');
     if (categoryBtn) categoryBtn.classList.add('active');
-    gameState.selectedCategory = category;
-}
-
-/**
- * 行动处理（兼容旧系统）
- */
-function performAction(category, action) {
-    // 暂时禁用旧系统，提示用户使用新抽卡系统
-    addDialog('system', '⚠️', '【新版本已更新】请使用新的抽卡系统进行游戏！');
-    addDialog('system', '🃏', '抽取卡牌，选择使用或弃牌来完成行动。');
-}
-
-/**
- * 显示完整状态
- */
-function showFullStatus() {
-    const npcStatus = Object.values(gameState.npcs).map(npc => npc.name + '：可疑度' + npc.suspicion + '/10，信任度' + npc.trust + '/10').join('\n');
-    const buildings = gameState.base.buildings.length > 0 ? gameState.base.buildings.map(b => b.name).join(', ') : '无';
-    const followers = gameState.resources.followers.list.length > 0 ? gameState.resources.followers.list.map(f => f.name).join(', ') : '无';
-    
-    const statusText = 
-        '角色状态\n' +
-        '名称：' + gameState.character.name + '\n' +
-        '职业：' + gameState.character.class + ' Lv.' + gameState.character.level + '\n' +
-        '生命值：' + gameState.character.hp + '/' + gameState.character.maxHp + '\n' +
-        '混沌值：' + chaosSystem.chaosValue + '/100\n' +
-        '声望：' + gameState.resources.reputation.value + '\n' +
-        '\n资源\n' +
-        '物资：' + gameState.resources.materials.value + '/' + gameState.resources.materials.max + '\n' +
-        '记忆碎片：' + gameState.resources.memoryFragments.value + '/' + gameState.resources.memoryFragments.max + '\n' +
-        '巢穴等级：' + gameState.base.level + '\n' +
-        '建筑：' + buildings + '\n' +
-        '追随者：' + followers + '\n' +
-        '\nNPC\n' + 
-        npcStatus + '\n' +
-        '\n回合信息\n' +
-        '当前回合：' + gameState.turn + '\n' +
-        '混沌阶段：' + chaosSystem.getPhaseInfo().name;
-    
-    addDialog('system', '📊', statusText);
-}
-
-/**
- * 获取行动名称（兼容旧系统）
- */
-function getActionName(category, action) {
-    const names = {
-        'combat': { 'attack_chaos': '迎击混沌入侵者', 'defend_base': '防守要塞入口' },
-        'building': { 'upgrade_base': '升级巢穴', 'build_training': '建造训练场', 'build_workshop': '建造工坊', 'build_shrine': '建造灵魂圣殿' },
-        'investigation': { 'talk_tam': '与塔姆对话', 'talk_carl': '与卡尔对话', 'talk_yuri': '与尤里对话' },
-        'exploration': { 'explore_wilderness': '探索北境荒野', 'searchruins': '搜索古代遗迹' },
-        'system': { 'save': '存档', 'load': '读档', 'status': '查看状态', 'endTurn': '回合结束', 'reset': '重置游戏' }
-    };
-    return names[category] && names[category][action] ? names[category][action] : action;
 }
 
 /**
@@ -203,10 +29,13 @@ function getActionName(category, action) {
  */
 function addDialog(type, avatar, text) {
     const dialogContent = document.getElementById('dialogContent');
+    if (!dialogContent) return;
+    
     const messageDiv = document.createElement('div');
     messageDiv.className = 'dialog-message ' + type;
     messageDiv.innerHTML = '<span class="dialog-avatar">' + avatar + '</span><div class="dialog-text">' + text.replace(/\n/g, '<br>') + '</div>';
     dialogContent.appendChild(messageDiv);
+    
     const dialogPanel = document.getElementById('dialogPanel');
     dialogPanel.querySelector('.dialog-content').scrollTop = dialogPanel.querySelector('.dialog-content').scrollHeight;
 }
@@ -215,109 +44,293 @@ function addDialog(type, avatar, text) {
  * 更新UI
  */
 function updateUI() {
+    if (!gameState) return;
+    
     // 角色信息
-    document.getElementById('charName').textContent = gameState.character.name;
-    document.getElementById('charClass').textContent = gameState.character.class + ' Lv.' + gameState.character.level;
-    document.getElementById('hpValue').textContent = gameState.character.hp;
-    document.getElementById('hpMax').textContent = gameState.character.maxHp;
-    document.getElementById('reputationValue').textContent = gameState.resources.reputation.value;
+    const charName = document.getElementById('charName');
+    const charClass = document.getElementById('charClass');
+    const hpValue = document.getElementById('hpValue');
+    const chaosValue = document.getElementById('chaosValue');
+    const faithValue = document.getElementById('faithValue');
     
-    // 回合信息
-    document.getElementById('turnNumber').textContent = gameState.turn;
+    if (charName) charName.textContent = gameState.character.name;
+    if (charClass) charClass.textContent = gameState.character.class + ' Lv.' + gameState.character.level;
+    if (hpValue) hpValue.textContent = gameState.character.hp;
+    if (chaosValue) chaosValue.textContent = gameState.character.chaos;
+    if (faithValue) faithValue.textContent = gameState.character.faith;
     
-    // 资源面板
-    updateResourcePanel();
+    // 资源
+    const materialValue = document.getElementById('materialValue');
+    const intelligenceValue = document.getElementById('intelligenceValue');
+    const faithPointsValue = document.getElementById('faithPointsValue');
+    
+    if (materialValue) materialValue.textContent = gameState.resources.materials;
+    if (intelligenceValue) intelligenceValue.textContent = gameState.resources.intelligence;
+    if (faithPointsValue) faithPointsValue.textContent = gameState.resources.faithPoints;
     
     // 混沌进度条
-    updateChaosBar();
+    updateChaosUI();
     
-    // 追随者面板
-    updateFollowerPanel();
+    // 回合
+    const turnNumber = document.getElementById('turnNumber');
+    const chaosProgress = document.getElementById('chaosProgress');
     
-    // 手牌区域
-    updateCardArea();
+    if (turnNumber) turnNumber.textContent = gameState.turn;
+    if (chaosProgress) chaosProgress.textContent = gameState.character.chaos;
+    
+    // 当前任务卡
+    updateCurrentCardUI();
+    
+    // 调查系统
+    updateInvestigationUI();
+    
+    // 追随者
+    updateFollowersUI();
 }
 
 /**
- * 更新资源面板
+ * 更新混沌UI
  */
-function updateResourcePanel() {
-    const panel = document.querySelector('.resource-panel');
-    if (panel) {
-        panel.outerHTML = resourceSystem.getResourcePanelHTML();
-    }
-}
-
-/**
- * 更新混沌进度条
- */
-function updateChaosBar() {
+function updateChaosUI() {
     const chaosFill = document.getElementById('chaosFill');
-    if (chaosFill) {
-        chaosFill.style.width = chaosSystem.chaosValue + '%';
-        
-        const colors = {
-            'pure': '#8b5cf6',
-            'light': '#eab308',
-            'corrupt': '#f97316',
-            'heavy': '#ef4444',
-            'fallen': '#dc2626'
-        };
-        
-        chaosFill.style.background = colors[chaosSystem.phase] || colors['pure'];
+    const chaosBarValue = document.getElementById('chaosBarValue');
+    const chaosPhaseLabel = document.getElementById('chaosPhaseLabel');
+    
+    if (!chaosFill || !chaosBarValue || !chaosPhaseLabel) return;
+    
+    const chaos = gameState.character.chaos;
+    chaosFill.style.width = chaos + '%';
+    chaosBarValue.textContent = chaos;
+    
+    // 颜色和阶段
+    let phase = '纯净';
+    let color = '#8b5cf6';
+    
+    if (chaos >= 80) { phase = '堕落'; color = '#dc2626'; }
+    else if (chaos >= 60) { phase = '重腐'; color = '#ef4444'; }
+    else if (chaos >= 40) { phase = '中腐'; color = '#f97316'; }
+    else if (chaos >= 20) { phase = '轻腐'; color = '#eab308'; }
+    
+    chaosFill.style.background = color;
+    chaosPhaseLabel.textContent = '当前阶段：' + phase;
+    chaosPhaseLabel.style.color = color;
+}
+
+/**
+ * 更新当前任务卡UI
+ */
+function updateCurrentCardUI() {
+    const cardArea = document.getElementById('currentCardArea');
+    const cardInfo = document.getElementById('cardInfo');
+    const cardTimer = document.getElementById('cardTimer');
+    
+    if (!cardArea || !cardInfo || !cardTimer) return;
+    
+    const card = gameState.currentCard;
+    
+    if (!card) {
+        cardArea.innerHTML = '<p class="empty-text">等待抽取新任务...</p>';
+        cardInfo.textContent = '暂无任务';
+        cardTimer.textContent = '-';
+        return;
     }
     
-    const chaosValueEl = document.getElementById('chaosValue');
-    if (chaosValueEl) {
-        chaosValueEl.textContent = chaosSystem.chaosValue;
+    const typeColors = {
+        chaos: '#ef4444',
+        faith: '#fbbf24',
+        combat: '#3b82f6',
+        devotion: '#ec4899'
+    };
+    
+    const typeNames = {
+        chaos: '混沌',
+        faith: '信仰',
+        combat: '战斗',
+        devotion: '眷属'
+    };
+    
+    // 奖励和惩罚HTML
+    let rewardsHTML = '';
+    if (card.reward) {
+        if (card.reward.materials) rewardsHTML += '<div class="reward-item">📦 成功：物资+' + card.reward.materials + '</div>';
+        if (card.reward.chaosReduction) rewardsHTML += '<div class="reward-item">✨ 成功：混沌值-' + card.reward.chaosReduction + '</div>';
+        if (card.reward.faith) rewardsHTML += '<div class="reward-item">⭐ 成功：信仰+' + card.reward.faith + '</div>';
+        if (card.reward.follower) rewardsHTML += '<div class="reward-item">👥 成功：获得追随者</div>';
+    }
+    
+    let penaltyHTML = '';
+    if (card.penalty && card.penalty.chaosIncrease) {
+        penaltyHTML = '<div class="penalty-item">💀 失败：混沌值+' + card.penalty.chaosIncrease + '</div>';
+    }
+    
+    cardArea.innerHTML = `
+        <div class="current-card-display ${card.type}" style="border-color: ${typeColors[card.type]}">
+            <div class="current-card-header">
+                <span class="current-card-type ${card.type}">【${typeNames[card.type]}卡】</span>
+                <span class="current-card-difficulty">${card.difficulty}</span>
+            </div>
+            <div class="current-card-name">${card.name}</div>
+            <div class="current-card-description">${card.description}</div>
+            <div class="current-card-progress">
+                <span>任务进度：${gameState.cardProgress}/${gameState.maxCardProgress}回合</span>
+                <span>剩余：${gameState.maxCardProgress - gameState.cardProgress}回合</span>
+            </div>
+            <div class="current-card-rewards">
+                ${rewardsHTML}
+                ${penaltyHTML}
+            </div>
+        </div>
+    `;
+    
+    cardInfo.textContent = `【${typeNames[card.type]}】${card.name}`;
+    cardTimer.textContent = `剩余回合：${gameState.maxCardProgress - gameState.cardProgress}`;
+}
+
+/**
+ * 更新调查UI
+ */
+function updateInvestigationUI() {
+    const section = document.getElementById('investigationSection');
+    if (!section) return;
+    
+    // 显示/隐藏调查区域
+    section.style.display = (gameState.currentCard && gameState.currentCard.type === 'chaos') ? 'block' : 'none';
+    
+    // 更新嫌疑人状态
+    const suspects = ['tam', 'carl', 'yuri'];
+    for (const id of suspects) {
+        const npc = gameState.npcs[id];
+        if (!npc) continue;
+        
+        const suspicionEl = document.getElementById(id + 'Suspicion');
+        const trustEl = document.getElementById(id + 'Trust');
+        
+        if (suspicionEl) suspicionEl.textContent = npc.suspicion;
+        if (trustEl) trustEl.textContent = npc.trust;
+    }
+    
+    // 更新证据列表
+    const evidenceList = document.getElementById('evidenceList');
+    if (evidenceList && gameState.investigation.evidence.length > 0) {
+        evidenceList.innerHTML = gameState.investigation.evidence.map(e => `
+            <div class="evidence-item ${e.isFalse ? 'false' : ''}">
+                <div class="evidence-text">${e.text}</div>
+                <div class="evidence-source">来自：${gameState.npcs[e.npcId].name} ${e.isFalse ? '（可能是幻觉）' : ''}</div>
+            </div>
+        `).join('');
     }
 }
 
 /**
- * 更新追随者面板
+ * 更新追随者UI
  */
-function updateFollowerPanel() {
-    const panel = document.querySelector('.followers-panel');
-    if (panel) {
-        let html = '<div class="followers-list">';
-        
-        for (const follower of gameState.resources.followers.list) {
-            const typeIcons = { 'combat': '⚔️', 'function': '🔧', 'special': '✨' };
-            html += `
-                <div class="follower-card">
-                    <div class="follower-avatar">${typeIcons[follower.type] || '👤'}</div>
-                    <div class="follower-info">
-                        <div class="follower-name">${follower.name}</div>
-                        <div class="follower-type">${follower.type}</div>
-                        <div class="follower-bonus">+${follower.bonus.attack || 0} 攻击</div>
-                    </div>
-                </div>
-            `;
+function updateFollowersUI() {
+    const panel = document.getElementById('followersPanel');
+    if (!panel) return;
+    
+    const followers = gameState.character.followers;
+    
+    if (!followers || followers.length === 0) {
+        panel.innerHTML = '<p class="empty-text">还没有追随者...</p>';
+        return;
+    }
+    
+    panel.innerHTML = followers.map(f => `
+        <div class="follower-card">
+            <div class="follower-avatar">${f.type === 'combat' ? '⚔️' : '🔮'}</div>
+            <div class="follower-info">
+                <div class="follower-name">${f.name}</div>
+                <div class="follower-type">${f.type === 'combat' ? '战斗追随者' : '灵能追随者'}</div>
+                <div class="follower-bonus">${f.attack ? '+' + f.attack + ' 攻击' : ''} ${f.ability ? f.ability : ''}</div>
+            </div>
+        </div>
+    `).join('');
+}
+
+/**
+ * 显示完整状态
+ */
+function showFullStatus() {
+    const npcStatus = Object.values(gameState.npcs).map(npc => 
+        `${npc.name}(${npc.role}): 可疑度${npc.suspicion}/10，信任度${npc.trust}/10`
+    ).join('\n');
+    
+    const followers = gameState.character.followers.length > 0 ? 
+        gameState.character.followers.map(f => f.name).join(', ') : '无';
+    
+    const statusText = 
+        `角色状态\n` +
+        `名称：${gameState.character.name}\n` +
+        `职业：${gameState.character.class}\n` +
+        `生命值：${gameState.character.hp}/${gameState.character.maxHp}\n` +
+        `混沌值：${gameState.character.chaos}/100\n` +
+        `信仰值：${gameState.character.faith}\n\n` +
+        `资源\n` +
+        `物资：${gameState.resources.materials}\n` +
+        `情报：${gameState.resources.intelligence}\n` +
+        `信仰点：${gameState.resources.faithPoints}\n\n` +
+        `回合：${gameState.turn}/${gameState.maxTurns}\n\n` +
+        `追随者：${followers}\n\n` +
+        `NPC状态\n${npcStatus}`;
+    
+    addDialog('system', '📊', statusText);
+}
+
+/**
+ * 信仰行动
+ */
+function performFaithAction(action) {
+    if (action === 'pray') {
+        if (gameState.resources.intelligence < 5) {
+            addDialog('system', '⚠️', '情报不足！需要5情报');
+            return;
         }
-        
-        html += '</div>';
-        panel.innerHTML = html;
+        gameState.resources.intelligence -= 5;
+        gameState.character.faith = Math.min(100, gameState.character.faith + 10);
+        addDialog('system', '🙏', '你进行了一次祈祷，信仰值+10');
+    } else if (action === 'purify') {
+        if (gameState.resources.materials < 20) {
+            addDialog('system', '⚠️', '物资不足！需要20物资');
+            return;
+        }
+        gameState.resources.materials -= 20;
+        gameState.character.chaos = Math.max(0, gameState.character.chaos - 15);
+        addDialog('system', '✨', '净化仪式完成，混沌值-15');
     }
+    updateUI();
 }
 
 /**
- * 更新手牌区域
+ * 眷属行动
  */
-function updateCardArea() {
-    const cardArea = document.getElementById('cardArea');
-    if (cardArea) {
-        cardArea.innerHTML = cardSystem.getHandHTML();
+function performDevotionAction(action) {
+    if (action === 'gift') {
+        if (gameState.resources.materials < 10) {
+            addDialog('system', '⚠️', '物资不足！需要10物资');
+            return;
+        }
+        gameState.resources.materials -= 10;
+        gameState.character.faith = Math.min(100, gameState.character.faith + 5);
+        addDialog('system', '🎁', '你送出了礼物，NPC好感度小幅提升');
+    } else if (action === 'help') {
+        if (gameState.resources.materials < 15) {
+            addDialog('system', '⚠️', '物资不足！需要15物资');
+            return;
+        }
+        gameState.resources.materials -= 15;
+        gameState.character.faith = Math.min(100, gameState.character.faith + 10);
+        addDialog('system', '🤝', '你帮助了NPC，信任度大幅提升');
     }
+    updateUI();
 }
 
-/**
- * 获取行动名称（全局）
- */
-window.getActionName = getActionName;
+// 导出函数到全局
+window.showCategory = showCategory;
 window.addDialog = addDialog;
 window.updateUI = updateUI;
-window.showCategory = showCategory;
-window.performAction = performAction;
 window.showFullStatus = showFullStatus;
-window.endTurn = endTurn;
-window.startTurn = startTurn;
+window.performFaithAction = performFaithAction;
+window.performDevotionAction = performDevotionAction;
+window.saveGame = saveGame;
+window.loadGame = loadGame;
+window.resetGame = resetGame;

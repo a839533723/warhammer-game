@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>战锤40K：虚空黎明 v0.2</title>
+    <title>战锤40K：虚空黎明 v0.3</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -11,10 +11,10 @@
         <!-- 标题 -->
         <header class="game-header">
             <h1>⚔️ 战锤40K：虚空黎明</h1>
-            <div class="subtitle">战争时代 · 荷鲁斯之乱 v0.2（抽卡版）</div>
+            <div class="subtitle">战争时代 · 荷鲁斯之乱 v0.3（AI增强版）</div>
         </header>
 
-        <!-- 状态面板 -->
+        <!-- 角色状态 -->
         <div class="status-panel">
             <div class="character-status">
                 <div class="character-avatar">🦾</div>
@@ -24,31 +24,122 @@
                     <div class="character-stats">
                         <span class="stat hp">❤️ <span id="hpValue">100</span>/<span id="hpMax">100</span></span>
                         <span class="stat chaos">🔮 <span id="chaosValue">0</span></span>
-                        <span class="stat reputation">⭐ <span id="reputationValue">0</span></span>
+                        <span class="stat faith">✨ <span id="faithValue">50</span></span>
                     </div>
                 </div>
             </div>
             
-            <!-- 资源面板（新系统） -->
+            <!-- 资源面板 -->
             <div class="resource-panel">
-                <!-- 资源由JS动态生成 -->
+                <div class="resource">
+                    <span class="icon">📦</span>
+                    <span class="name">物资</span>
+                    <span class="value" id="materialValue">50</span>
+                </div>
+                <div class="resource">
+                    <span class="icon">🧠</span>
+                    <span class="name">情报</span>
+                    <span class="value" id="intelligenceValue">10</span>
+                </div>
+                <div class="resource">
+                    <span class="icon">⭐</span>
+                    <span class="name">信仰</span>
+                    <span class="value" id="faithPointsValue">0</span>
+                </div>
             </div>
         </div>
 
-        <!-- 混沌进度条（新系统） -->
+        <!-- 混沌进度条 -->
         <div class="chaos-container">
-            <!-- 混沌进度条由JS动态生成 -->
+            <div class="chaos-bar-label">
+                <span>混沌侵蚀度</span>
+                <span class="chaos-value"><span id="chaosBarValue">0</span>/100</span>
+            </div>
+            <div class="chaos-bar">
+                <div class="chaos-fill" id="chaosFill" style="width: 0%"></div>
+                <div class="chaos-marker" style="left: 20%">纯净</div>
+                <div class="chaos-marker" style="left: 50%">中腐</div>
+                <div class="chaos-marker" style="left: 80%">重腐</div>
+            </div>
+            <div class="chaos-phase-label" id="chaosPhaseLabel">当前阶段：纯净</div>
         </div>
 
-        <!-- 抽卡区域（新系统） -->
-        <div class="card-section">
-            <div class="section-title">🃏 抽卡区域（每回合抽取3张卡牌）</div>
+        <!-- 任务卡区域 -->
+        <div class="card-section" id="cardSection">
+            <div class="section-title">🃏 当前任务</div>
             <div class="card-info">
-                <span>💡 提示：点击卡牌查看详情，选择使用或弃牌</span>
-                <span id="cardsRemaining">剩余卡牌：50</span>
+                <span id="cardInfo">抽取任务卡牌...</span>
+                <span id="cardTimer">剩余回合：3</span>
             </div>
-            <div id="cardArea">
-                <!-- 手牌由JS动态生成 -->
+            <div id="currentCardArea">
+                <!-- 当前任务卡显示在这里 -->
+            </div>
+        </div>
+
+        <!-- 调查系统（混沌卡） -->
+        <div class="investigation-section" id="investigationSection" style="display: none;">
+            <div class="section-title">🔍 调查模式 - 找出混沌内鬼</div>
+            
+            <div class="suspects-container">
+                <!-- 嫌疑人列表 -->
+                <div class="suspect-card" onclick="interrogate('tam')">
+                    <div class="suspect-avatar">👨‍✈️</div>
+                    <div class="suspect-info">
+                        <div class="suspect-name">塔姆</div>
+                        <div class="suspect-role">士兵</div>
+                        <div class="suspect-status">
+                            <span>可疑度: <span id="tamSuspicion">3</span>/10</span>
+                            <span>信任度: <span id="tamTrust">5</span>/10</span>
+                        </div>
+                    </div>
+                    <button class="action-btn-small">审问</button>
+                </div>
+                
+                <div class="suspect-card" onclick="interrogate('carl')">
+                    <div class="suspect-avatar">📦</div>
+                    <div class="suspect-info">
+                        <div class="suspect-name">卡尔</div>
+                        <div class="suspect-role">军需官</div>
+                        <div class="suspect-status">
+                            <span>可疑度: <span id="carlSuspicion">5</span>/10</span>
+                            <span>信任度: <span id="carlTrust">3</span>/10</span>
+                        </div>
+                    </div>
+                    <button class="action-btn-small">审问</button>
+                </div>
+                
+                <div class="suspect-card" onclick="interrogate('yuri')">
+                    <div class="suspect-avatar">🔧</div>
+                    <div class="suspect-info">
+                        <div class="suspect-name">尤里</div>
+                        <div class="suspect-role">技术神甫</div>
+                        <div class="suspect-status">
+                            <span>可疑度: <span id="yuriSuspicion">4</span>/10</span>
+                            <span>信任度: <span id="yuriTrust">2</span>/10</span>
+                        </div>
+                    </div>
+                    <button class="action-btn-small">审问</button>
+                </div>
+            </div>
+            
+            <!-- 证据列表 -->
+            <div class="evidence-container">
+                <div class="section-subtitle">📝 收集的线索</div>
+                <div id="evidenceList">
+                    <p class="empty-text">还没有线索...</p>
+                </div>
+            </div>
+            
+            <!-- 投票区域 -->
+            <div class="voting-container">
+                <div class="section-subtitle">🗳️ 投票处决</div>
+                <p>收集足够线索后，你可以投票处决你认为的内鬼。</p>
+                <div class="voting-buttons">
+                    <button class="action-btn vote-btn" onclick="vote('tam')">处决塔姆</button>
+                    <button class="action-btn vote-btn" onclick="vote('carl')">处决卡尔</button>
+                    <button class="action-btn vote-btn" onclick="vote('yuri')">处决尤里</button>
+                </div>
+                <p class="warning">⚠️ 处决错误会增加混沌值！</p>
             </div>
         </div>
 
@@ -56,39 +147,22 @@
         <div class="dialog-panel" id="dialogPanel">
             <div class="dialog-title">📜 战况报告</div>
             <div class="dialog-content" id="dialogContent">
-                <div class="dialog-message system">
-                    <span class="dialog-avatar">🌌</span>
-                    <div class="dialog-text">
-                        欢迎来到战锤40K：虚空黎明 v0.2！
-                        <br><br>
-                        新版本重磅更新：
-                        <br>🃏 <strong>抽卡系统</strong> - 每回合抽取3张卡牌，选择使用或弃牌
-                        <br>🔮 <strong>混沌系统</strong> - 混沌值影响你的行动和结局
-                        <br>👥 <strong>追随者系统</strong> - 招募追随者获得战斗加成
-                        <br><br>
-                        游戏规则：
-                        <br>• 每回合抽取3张卡牌，选择1-2张使用
-                        <br>• 合理管理资源，避免混沌值过高
-                        <br>• 招募追随者，增强战斗力
-                        <br>• 揭露隐藏的内鬼，找到真相
-                        <br><br>
-                        准备好了吗？让我们开始吧！
-                    </div>
-                </div>
+                <!-- 对话消息动态添加 -->
             </div>
         </div>
 
-        <!-- 追随者面板（新系统） -->
+        <!-- 追随者面板 -->
         <div class="followers-section">
-            <div class="section-title">👥 追随者面板</div>
-            <div class="followers-panel">
-                <!-- 追随者由JS动态生成 -->
+            <div class="section-title">👥 追随者</div>
+            <div class="followers-panel" id="followersPanel">
+                <p class="empty-text">还没有追随者...</p>
             </div>
         </div>
 
-        <!-- 行动面板（兼容旧系统） -->
+        <!-- 行动面板 -->
         <div class="action-panel">
-            <div class="action-title">🎮 行动选择（兼容旧系统）</div>
+            <div class="action-title">🎮 行动</div>
+            
             <div class="action-categories">
                 <button class="action-category" onclick="showCategory('system')">
                     <span class="category-icon">⚙️</span>
@@ -98,9 +172,13 @@
                     <span class="category-icon">🔍</span>
                     <span class="category-name">调查</span>
                 </button>
-                <button class="action-category" onclick="showCategory('building')">
-                    <span class="category-icon">🏗️</span>
-                    <span class="category-name">建筑</span>
+                <button class="action-category" onclick="showCategory('faith')">
+                    <span class="category-icon">✨</span>
+                    <span class="category-name">信仰</span>
+                </button>
+                <button class="action-category" onclick="showCategory('devotion')">
+                    <span class="category-icon">💕</span>
+                    <span class="category-name">眷属</span>
                 </button>
             </div>
             
@@ -108,55 +186,55 @@
             <div class="action-list" id="system-actions" style="display: none;">
                 <button class="action-btn" onclick="saveGame()">
                     💾 存档
-                    <span class="action-cost">保存进度</span>
                 </button>
                 <button class="action-btn" onclick="loadGame()">
                     📂 读档
-                    <span class="action-cost">加载进度</span>
                 </button>
                 <button class="action-btn" onclick="showFullStatus()">
                     📊 查看完整状态
-                    <span class="action-cost">角色详情</span>
                 </button>
                 <button class="action-btn" onclick="endTurn()">
                     ⏭️ 回合结束
-                    <span class="action-cost">新回合</span>
                 </button>
-                <button class="action-btn" onclick="resetGame()">
+                <button class="action-btn danger" onclick="resetGame()">
                     🔄 重置游戏
-                    <span class="action-cost">清空存档</span>
                 </button>
             </div>
-
+            
             <!-- 调查行动 -->
             <div class="action-list" id="investigation-actions" style="display: none;">
-                <button class="action-btn" onclick="performAction('investigation', 'talk_tam')">
-                    💬 与塔姆对话
-                    <span class="action-cost">调查内鬼</span>
+                <button class="action-btn" onclick="interrogate('tam')">
+                    💬 审问塔姆
                 </button>
-                <button class="action-btn" onclick="performAction('investigation', 'talk_carl')">
-                    💬 与卡尔对话
-                    <span class="action-cost">调查内鬼</span>
+                <button class="action-btn" onclick="interrogate('carl')">
+                    💬 审问卡尔
                 </button>
-                <button class="action-btn" onclick="performAction('investigation', 'talk_yuri')">
-                    💬 与尤里对话
-                    <span class="action-cost">调查内鬼</span>
+                <button class="action-btn" onclick="interrogate('yuri')">
+                    💬 审问尤里
                 </button>
             </div>
-
-            <!-- 建筑行动 -->
-            <div class="action-list" id="building-actions" style="display: none;">
-                <button class="action-btn" onclick="performAction('building', 'upgrade_base')">
-                    🏗️ 升级巢穴
+            
+            <!-- 信仰行动 -->
+            <div class="action-list" id="faith-actions" style="display: none;">
+                <button class="action-btn" onclick="performFaithAction('pray')">
+                    🙏 祈祷
+                    <span class="action-cost">消耗5情报</span>
+                </button>
+                <button class="action-btn" onclick="performFaithAction('purify')">
+                    ✨ 净化仪式
+                    <span class="action-cost">消耗20物资</span>
+                </button>
+            </div>
+            
+            <!-- 眷属行动 -->
+            <div class="action-list" id="devotion-actions" style="display: none;">
+                <button class="action-btn" onclick="performDevotionAction('gift')">
+                    🎁 送礼
+                    <span class="action-cost">消耗10物资</span>
+                </button>
+                <button class="action-btn" onclick="performDevotionAction('help')">
+                    🤝 帮助
                     <span class="action-cost">消耗15物资</span>
-                </button>
-                <button class="action-btn" onclick="performAction('building', 'build_training')">
-                    🎯 建造训练场
-                    <span class="action-cost">消耗10物资</span>
-                </button>
-                <button class="action-btn" onclick="performAction('building', 'build_workshop')">
-                    ⚙️ 建造工坊
-                    <span class="action-cost">消耗10物资</span>
                 </button>
             </div>
         </div>
@@ -166,20 +244,18 @@
             <div class="progress-item">
                 <span class="progress-label">回合</span>
                 <span class="progress-value" id="turnNumber">1</span>
+                <span class="progress-max">/14</span>
             </div>
             <div class="progress-item">
-                <span class="progress-label">卡牌</span>
-                <span class="progress-value" id="handSize">0</span>
-                <span class="progress-max">/3</span>
+                <span class="progress-label">混沌值</span>
+                <span class="progress-value" id="chaosProgress">0</span>
+                <span class="progress-max">/100</span>
             </div>
         </div>
     </div>
 
     <!-- 加载JS模块 -->
     <script src="js/gameState.js"></script>
-    <script src="js/resourceSystem.js"></script>
-    <script src="js/chaosSystem.js"></script>
-    <script src="js/cardSystem.js"></script>
     <script src="js/main.js"></script>
 </body>
 </html>
