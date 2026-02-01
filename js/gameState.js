@@ -779,7 +779,8 @@ function completeCard(success) {
     
     // 询问是否继续
     setTimeout(() => {
-        addDialog('system', '🎮', '是否继续下一张卡牌？点击"开始任务"继续');
+        addDialog('system', '🎮', '点击下方"开始任务"按钮继续下一张卡');
+        showNextCardButton();
     }, 500);
 }
 

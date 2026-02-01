@@ -17,29 +17,81 @@ document.addEventListener('DOMContentLoaded', () => {
  * 添加开始任务按钮
  */
 function addStartButton() {
-    // 检查是否已有按钮
-    if (document.getElementById('startGameBtn')) return;
-    
     const progressPanel = document.querySelector('.progress-panel');
     if (!progressPanel) return;
     
+    // 移除现有的按钮（如果有）
+    const existingBtn = document.getElementById('startGameBtn');
+    if (existingBtn) existingBtn.remove();
+    
+    // 重新创建按钮
     const startBtn = document.createElement('button');
     startBtn.id = 'startGameBtn';
     startBtn.className = 'action-btn';
-    startBtn.style.cssText = 'background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%); color: #fff; font-size: 16px; padding: 15px 30px; width: 100%; margin-top: 15px;';
-    startBtn.innerHTML = '🎮 开始任务';
+    
+    // 根据游戏状态显示不同文本
+    let btnText = '🎮 开始任务';
+    let btnStyle = 'background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%); color: #fff; font-size: 16px; padding: 15px 30px; width: 100%; margin-top: 15px;';
+    
+    if (gameState.phase === 'main') {
+        if (gameState.currentCard) {
+            btnText = '🎯 继续当前任务';
+        } else {
+            btnText = '🃏 抽取新任务卡';
+        }
+    }
+    
+    startBtn.innerHTML = btnText;
+    startBtn.style.cssText = btnStyle;
     startBtn.onclick = function() {
         if (gameState.phase === 'guide') {
             this.style.display = 'none';
             startMainPhase();
         } else if (gameState.currentCard) {
-            endTurn();
+            // 显示当前任务信息
+            addDialog('system', '🎯', '当前任务：' + gameState.currentCard.name);
+            addDialog('system', '📋', gameState.currentCard.description);
         } else {
+            // 抽取新卡
             drawCard();
         }
     };
     
+    // 插入到进度面板后面
     progressPanel.parentNode.insertBefore(startBtn, progressPanel.nextSibling);
+}
+
+/**
+ * 显示下一张卡按钮（任务完成后调用）
+ */
+function showNextCardButton() {
+    const btn = document.getElementById('startGameBtn');
+    if (btn) {
+        btn.innerHTML = '🃏 抽取新任务卡';
+        btn.style.display = 'block';
+        btn.style.animation = 'pulse 1s infinite';
+    } else {
+        addStartButton();
+        const newBtn = document.getElementById('startGameBtn');
+        if (newBtn) {
+            newBtn.innerHTML = '🃏 抽取新任务卡';
+            newBtn.style.animation = 'pulse 1s infinite';
+        }
+    }
+    
+    // 添加脉冲动画样式（如果还没有）
+    if (!document.getElementById('pulseStyle')) {
+        const style = document.createElement('style');
+        style.id = 'pulseStyle';
+        style.textContent = `
+            @keyframes pulse {
+                0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(139, 92, 246, 0.7); }
+                70% { transform: scale(1.02); box-shadow: 0 0 0 10px rgba(139, 92, 246, 0); }
+                100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(139, 92, 246, 0); }
+            }
+        `;
+        document.head.appendChild(style);
+    }
 }
 
 /**
@@ -476,3 +528,4 @@ window.showElenaChat = showElenaChat;
 window.hideElenaChat = hideElenaChat;
 window.askElena = askElena;
 window.sendToElena = sendToElena;
+window.showNextCardButton = showNextCardButton;
