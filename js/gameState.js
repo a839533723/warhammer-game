@@ -217,24 +217,85 @@ function updateChaosUI() {
     const chaosFill = document.getElementById('chaosFill');
     const chaosBarValue = document.getElementById('chaosBarValue');
     const chaosPhaseLabel = document.getElementById('chaosPhaseLabel');
-    
+    const chaosContainer = document.querySelector('.chaos-container');
+
     if (!chaosFill || !chaosBarValue || !chaosPhaseLabel) return;
-    
+
     const chaos = gameState.character.chaos;
     chaosFill.style.width = chaos + '%';
     chaosBarValue.textContent = chaos;
-    
-    let phase = '纯净';
-    let color = '#8b5cf6';
-    
-    if (chaos >= 80) { phase = '堕落'; color = '#dc2626'; }
-    else if (chaos >= 60) { phase = '重腐'; color = '#ef4444'; }
-    else if (chaos >= 40) { phase = '中腐'; color = '#f97316'; }
-    else if (chaos >= 20) { phase = '轻腐'; color = '#eab308'; }
-    
-    chaosFill.style.background = color;
-    chaosPhaseLabel.textContent = '当前阶段：' + phase;
-    chaosPhaseLabel.style.color = color;
+
+    // 定义混沌阶段（6个阶段，更多细节）
+    const phases = [
+        {threshold: 0, name: '纯净', color: '#8b5cf6', bg: 'rgba(139, 92, 246, 0.1)'},
+        {threshold: 20, name: '轻腐', color: '#a78bfa', bg: 'rgba(167, 139, 250, 0.15)'},
+        {threshold: 40, name: '中腐', color: '#eab308', bg: 'rgba(234, 179, 8, 0.15)'},
+        {threshold: 60, name: '重腐', color: '#f97316', bg: 'rgba(249, 115, 22, 0.15)'},
+        {threshold: 80, name: '深渊', color: '#ef4444', bg: 'rgba(239, 68, 68, 0.2)'},
+        {threshold: 95, name: '堕落', color: '#dc2626', bg: 'rgba(220, 38, 38, 0.25)'}
+    ];
+
+    // 找到当前阶段
+    let currentPhase = phases[0];
+    for (let i = phases.length - 1; i >= 0; i--) {
+        if (chaos >= phases[i].threshold) {
+            currentPhase = phases[i];
+            break;
+        }
+    }
+
+    // 更新UI
+    chaosFill.style.background = currentPhase.color;
+    chaosPhaseLabel.textContent = '当前阶段：' + currentPhase.name;
+    chaosPhaseLabel.style.color = currentPhase.color;
+
+    // 混沌阶段警告（背景光晕效果）
+    if (chaosContainer) {
+        chaosContainer.style.background = currentPhase.bg;
+        if (chaos >= 60) {
+            chaosContainer.style.boxShadow = '0 0 20px ' + currentPhase.color + '40';
+        } else {
+            chaosContainer.style.boxShadow = 'none';
+        }
+    }
+
+    // 高混沌时添加视觉效果
+    chaosFill.classList.remove('high-chaos', 'critical');
+    if (chaos >= 80) {
+        chaosFill.classList.add('critical');
+    } else if (chaos >= 60) {
+        chaosFill.classList.add('high-chaos');
+    }
+
+    // 计算到下一阶段的回合数
+    let nextThreshold = 100;
+    for (let i = 0; i < phases.length; i++) {
+        if (chaos < phases[i].threshold) {
+            nextThreshold = phases[i].threshold;
+            break;
+        }
+    }
+
+    // 混沌倒计时（根据平均每回合增长估算）
+    if (chaos < 100 && gameState.resourceHistory.materials.length > 1) {
+        // 估算增长趋势
+        const history = gameState.resourceHistory.materials;
+        if (history.length >= 2) {
+            const lastChange = history[history.length - 1].value - history[history.length - 2].value;
+            // 如果最近几个回合混沌值在增加
+            if (lastChange < 0) { // 物资减少通常意味着混沌增加
+                const roundsToNext = Math.ceil((nextThreshold - chaos) / 5); // 假设每回合增加5
+                if (roundsToNext <= 5) {
+                    chaosPhaseLabel.innerHTML += ' <span class="chaos-warning">⚠️ ' + roundsToNext + '回合后进入下一阶段</span>';
+                }
+            }
+        }
+    }
+
+    // 堕落警告
+    if (chaos >= 90) {
+        chaosPhaseLabel.innerHTML += ' <span class="chaos-danger">⚠️ 即将堕落！</span>';
+    }
 }
 
 function updateCurrentCardUI() {
