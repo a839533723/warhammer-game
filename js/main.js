@@ -489,19 +489,7 @@ window.resetGame = resetGame;
 // 伊莲娜对话系统
 // ============================================
 
-function showElenaChat() {
-    document.getElementById('elenaPopup').style.display = 'flex';
-}
-
-function hideElenaChat() {
-    document.getElementById('elenaPopup').style.display = 'none';
-}
-
-async function askElena(questionType) {
-    const messagesContainer = document.getElementById('elenaMessages');
-    if (!messagesContainer) return;
-
-    // 添加加载状态
+async     // 添加加载状态
     const loadingDiv = document.createElement('div');
     loadingDiv.className = 'elena-message';
     loadingDiv.id = 'elenaLoading';
@@ -513,85 +501,7 @@ async function askElena(questionType) {
     // 显式使用window.getElenaTip确保函数可访问
     const response = window.getElenaTip ? window.getElenaTip(questionType) : '预设加载失败...';
 
-    // 移除加载状态
-    const loading = document.getElementById('elenaLoading');
-    if (loading) loading.remove();
-
-    const messageDiv = document.createElement('div');
-    messageDiv.className = 'elena-message';
-    messageDiv.textContent = response || '姐姐不知道说什么...';
-    messagesContainer.appendChild(messageDiv);
-    messagesContainer.scrollTop = messagesContainer.scrollHeight;
-}
-
-async function sendToElena() {
-    const input = document.getElementById('elenaInput');
-    const question = input.value.trim();
-    
-    if (!question) return;
-    
-    // 显示玩家的问题
-    const messagesContainer = document.getElementById('elenaMessages');
-    const playerDiv = document.createElement('div');
-    playerDiv.style.cssText = 'background: rgba(59, 130, 246, 0.2); border-radius: 12px; padding: 10px 15px; margin-bottom: 10px; color: #fff; text-align: right;';
-    playerDiv.textContent = '你：' + question;
-    messagesContainer.appendChild(playerDiv);
-    
-    input.value = '';
-    messagesContainer.scrollTop = messagesContainer.scrollHeight;
-    
-    // 调用AI（使用general类型，但传入用户问题）
-    const messagesDiv = document.createElement('div');
-    messagesDiv.className = 'elena-message';
-    messagesDiv.id = 'elenaLoading';
-    messagesDiv.textContent = '伊莲娜正在思考...';
-    messagesContainer.appendChild(messagesDiv);
-    messagesContainer.scrollTop = messagesContainer.scrollHeight;
-    
-    // 构建基于用户问题的prompt
-    const chaosLevel = gameState.character.chaos;
-    const turn = gameState.turn;
-    const currentCard = gameState.currentCard;
-
-    // 使用预设对话（不再调用AI）
-    // 根据问题关键词选择合适的预设回答
-    let response = '';
-    const questionLower = question.toLowerCase();
-
-    if (questionLower.includes('任务') || questionLower.includes('卡')) {
-        response = window.getElenaTip ? window.getElenaTip('card') : '预设加载失败...';
-    } else if (questionLower.includes('混沌')) {
-        response = window.getElenaTip ? window.getElenaTip('chaos') : '预设加载失败...';
-    } else if (questionLower.includes('怎么') || questionLower.includes('做') || questionLower.includes('策略')) {
-        response = window.getElenaTip ? window.getElenaTip('strategy') : '预设加载失败...';
-    } else if (questionLower.includes('玩法') || questionLower.includes('游戏')) {
-        response = window.getElenaTip ? window.getElenaTip('general') : '预设加载失败...';
-    } else {
-        // 通用回答（根据当前状态）
-        if (gameState.character.chaos > 50) {
-            response = '小鬼，你混沌值有点高啊...小心点，别被混沌影响了。记住，不管发生什么，姐姐都会帮你的。';
-        } else if (gameState.turn > 10) {
-            response = '战斗已经持续很久了...你还好吗？坚持住，胜利就在前方！';
-        } else {
-            response = window.getElenaTip ? window.getElenaTip('general') : '预设加载失败...';
-        }
-    }
-
-    document.getElementById('elenaLoading')?.remove();
-
-    const messageDiv = document.createElement('div');
-    messageDiv.className = 'elena-message';
-    messageDiv.textContent = response;
-    messagesContainer.appendChild(messageDiv);
-
-    messagesContainer.scrollTop = messagesContainer.scrollHeight;
-}
-
-// 导出伊莲娜对话函数
-window.showElenaChat = showElenaChat;
-window.hideElenaChat = hideElenaChat;
-window.askElena = askElena;
-window.sendToElena = sendToElena;
+    //// 导出伊莲娜对话函数
 window.showNextCardButton = showNextCardButton;
 
 // ============================================

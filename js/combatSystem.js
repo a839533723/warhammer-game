@@ -1,527 +1,667 @@
 /**
- * 战锤40K - 战斗系统增强模块
- * 伤害计算、暴击、护甲、连击系统
+ * 战锤40K - 完整战斗系统
+ * 真正的战斗过程、奖励、结算
  */
 
 // ============================================
-// 战斗属性系统
+// 敌人数据库
 // ============================================
 
-/**
- * 获取角色战斗属性
- */
-function getCharacterStats() {
-    const char = gameState.character;
-    const followers = gameState.character.followers || [];
-
-    // 基础属性
-    let attack = 10;  // 基础攻击
-    let defense = 5;  // 基础防御
-    let critRate = 0.1;  // 暴击率 10%
-    let critDamage = 1.5;  // 暴击伤害 150%
-    let comboRate = 0.05;  // 连击率 5%
-    let health = char.maxHp || 100;
-
-    // 根据职业调整
-    const classBonuses = {
-        '极限战士': { attack: 15, defense: 12, critRate: 0.1 },
-        '狼弟子': { attack: 20, defense: 8, critRate: 0.15 },
-        '刺客庭刺客': { attack: 18, defense: 6, critRate: 0.2 },
-        '帝国之拳': { attack: 12, defense: 18, critRate: 0.05 },
-        '灰骑士': { attack: 14, defense: 10, critRate: 0.12 },
-        '机械教信徒': { attack: 10, defense: 14, critRate: 0.08 },
-        '帝国军官': { attack: 13, defense: 11, critRate: 0.1 },
-        '黑暗天使': { attack: 16, defense: 9, critRate: 0.15 }
-    };
-
-    const bonus = classBonuses[char.class] || { attack: 10, defense: 8, critRate: 0.1 };
-    attack += bonus.attack;
-    defense += bonus.bonus?.attack || 0;
-    critRate += bonus.critRate || 0;
-
-    // 等级加成（每级+2攻击，+1防御）
-    attack += (char.level - 1) * 2;
-    defense += (char.level - 1) * 1;
-
-    // 追随者加成
-    for (const follower of followers) {
-        if (follower.type === 'combat') {
-            attack += 5;
-            defense += 3;
-            comboRate += 0.05;
-        } else if (follower.type === 'psychic') {
-            critDamage += 0.2;
-            critRate += 0.05;
+const ENEMY_DATABASE = {
+    // 混沌敌人
+    chaos: {
+        '混沌信徒': {
+            hp: 30, attack: 8, defense: 3,
+            description: '被混沌腐蚀的信徒，眼中燃烧着疯狂',
+            rewards: { materials: 15, faith: 5, chaos: 2 },
+            attackText: ['挥舞着腐蚀的剑', '发出刺耳的咆哮', '试图用混沌魔法侵蚀你']
+        },
+        '混沌武士': {
+            hp: 50, attack: 12, defense: 6,
+            description: '强大的混沌战士，装备着被腐蚀的盔甲',
+            rewards: { materials: 30, faith: 10, chaos: 5 },
+            attackText: ['猛烈劈砍', '召唤混沌闪电', '用盾牌猛击']
+        },
+        '混沌冠军': {
+            hp: 100, attack: 18, defense: 10,
+            description: '混沌力量的化身，体型巨大的战士',
+            rewards: { materials: 80, faith: 25, chaos: 10 },
+            attackText: ['释放混沌爆发', '召唤恶魔仆从', '愤怒的粉碎攻击']
+        }
+    },
+    // 异形敌人
+    alien: {
+        '兽人小子': {
+            hp: 25, attack: 10, defense: 2,
+            description: '矮小但凶悍的兽人，手里拿着生锈的武器',
+            rewards: { materials: 10, scrap: 5 },
+            attackText: ['冲锋', '用武器乱砍', '发出战吼']
+        },
+        '兽人军阀': {
+            hp: 60, attack: 15, defense: 8,
+            description: '体型巨大的兽人首领，装备着高科技武器',
+            rewards: { materials: 40, scrap: 15 },
+            attackText: ['重型射击', '近战猛击', '呼叫支援']
+        },
+        '太空亡灵': {
+            hp: 40, attack: 14, defense: 4,
+            description: '不死族的战士，没有任何痛觉',
+            rewards: { materials: 20, soulFragment: 1 },
+            attackText: ['灵魂冲击', '吸取生命力', '制造亡灵仆从']
+        }
+    },
+    // 帝国敌人（特殊情况）
+    imperial: {
+        '堕落骑士': {
+            hp: 80, attack: 16, defense: 12,
+            description: '曾经伟大的骑士，现在成为了叛徒',
+            rewards: { materials: 50, holyRelic: 1 },
+            attackText: ['荣耀斩击', '神圣审判', '愤怒冲锋']
         }
     }
-
-    // 混沌惩罚（混沌值>50时属性下降）
-    if (char.chaos > 50) {
-        const chaosPenalty = (char.chaos - 50) / 100; // 0-0.5
-        attack = Math.floor(attack * (1 - chaosPenalty));
-        defense = Math.floor(defense * (1 - chaosPenalty));
-        critRate = Math.max(0, critRate - chaosPenalty);
-    }
-
-    return {
-        attack: attack,
-        defense: defense,
-        critRate: Math.min(0.5, critRate), // 最高50%暴击率
-        critDamage: critDamage,
-        comboRate: Math.min(0.3, comboRate), // 最高30%连击率
-        health: health,
-        maxHealth: char.maxHp || 100
-    };
-}
-
-/**
- * 获取敌人战斗属性
- */
-function getEnemyStats(enemyType, difficulty) {
-    // 敌人基础属性
-    const baseStats = {
-        '混沌信徒': { attack: 8, defense: 4, health: 30 },
-        '兽人步兵': { attack: 12, defense: 6, health: 50 },
-        '兽人军阀': { attack: 18, defense: 10, health: 80 },
-        '混沌冠军': { attack: 25, defense: 15, health: 100 },
-        '灵能者': { attack: 20, defense: 5, health: 40 },
-        '暗黑天使叛徒': { attack: 22, defense: 12, health: 90 }
-    };
-
-    let stats = baseStats[enemyType] || { attack: 10, defense: 5, health: 40 };
-
-    // 难度加成
-    const difficultyMultiplier = {
-        'simple': 0.7,
-        'normal': 1.0,
-        'hard': 1.5,
-        'extreme': 2.0
-    };
-
-    const multiplier = difficultyMultiplier[difficulty] || 1.0;
-    stats.attack = Math.floor(stats.attack * multiplier);
-    stats.defense = Math.floor(stats.defense * multiplier);
-    stats.health = Math.floor(stats.health * multiplier);
-
-    return stats;
-}
-
-// ============================================
-// 战斗计算系统
-// ============================================
-
-/**
- * 计算伤害
- */
-function calculateDamage(attackerStats, defenderStats, isPlayer = true) {
-    // 基础伤害 = 攻击 - 防御
-    let baseDamage = Math.max(1, attackerStats.attack - defenderStats.defense);
-
-    // 随机波动 (±20%)
-    const variance = (Math.random() * 0.4) + 0.8;
-    baseDamage = Math.floor(baseDamage * variance);
-
-    // 暴击判定
-    const isCrit = Math.random() < attackerStats.critRate;
-    if (isCrit) {
-        baseDamage = Math.floor(baseDamage * attackerStats.critDamage);
-    }
-
-    // 连击判定（追加伤害）
-    let comboDamage = 0;
-    let comboCount = 0;
-    while (Math.random() < attackerStats.comboRate && comboCount < 3) {
-        comboDamage += Math.floor(baseDamage * 0.5);
-        comboCount++;
-    }
-
-    const totalDamage = baseDamage + comboDamage;
-
-    return {
-        baseDamage: baseDamage,
-        comboDamage: comboDamage,
-        totalDamage: totalDamage,
-        isCrit: isCrit,
-        comboCount: comboCount,
-        blocked: defenderStats.defense > attackerStats.attack,
-        overkill: false
-    };
-}
-
-/**
- * 执行战斗（完整回合）
- */
-async function combatRound(enemyType, difficulty) {
-    const player = getCharacterStats();
-    const enemy = getEnemyStats(enemyType, difficulty);
-
-    let playerHealth = player.health;
-    let enemyHealth = enemy.health;
-    let combatLog = [];
-
-    // 先攻判定（玩家先手，除非敌人偷袭）
-    const playerFirst = Math.random() < 0.7; // 70%先手
-
-    if (!playerFirst) {
-        // 敌人先攻击
-        const enemyAttack = calculateDamage(enemy, player, false);
-        playerHealth -= enemyAttack.totalDamage;
-        combatLog.push({
-            type: 'enemy',
-            text: `敌人先发制人！对你造成 ${enemyAttack.totalDamage} 点伤害${enemyAttack.isCrit ? '（暴击）' : ''}`,
-            damage: enemyAttack.totalDamage,
-            crit: enemyAttack.isCrit
-        });
-
-        if (playerHealth <= 0) {
-            return { victory: false, log: combatLog, damage: enemy.health - enemyHealth };
-        }
-    }
-
-    // 玩家攻击
-    const playerAttack = calculateDamage(player, enemy, true);
-    enemyHealth -= playerAttack.totalDamage;
-    combatLog.push({
-        type: 'player',
-        text: `你发动攻击！造成 ${playerAttack.totalDamage} 点伤害${playerAttack.isCrit ? '（暴击）' : ''}${playerAttack.comboCount > 0 ? ` + ${playerAttack.comboCount}连击` : ''}`,
-        damage: playerAttack.totalDamage,
-        crit: playerAttack.isCrit,
-        combo: playerAttack.comboCount
-    });
-
-    if (enemyHealth <= 0) {
-        return {
-            victory: true,
-            log: combatLog,
-            damage: enemy.health - enemyHealth,
-            enemyKilled: enemyType
-        };
-    }
-
-    // 敌人反击
-    const enemyAttack = calculateDamage(enemy, player, false);
-    playerHealth -= enemyAttack.totalDamage;
-    combatLog.push({
-        type: 'enemy',
-        text: `敌人反击！对你造成 ${enemyAttack.totalDamage} 点伤害${enemyAttack.isCrit ? '（暴击）' : ''}`,
-        damage: enemyAttack.totalDamage,
-        crit: enemyAttack.isCrit
-    });
-
-    if (playerHealth <= 0) {
-        return { victory: false, log: combatLog, damage: enemy.health - enemyHealth };
-    }
-
-    // 返回战斗结果
-    return {
-        victory: enemyHealth < player.health / 2, // 敌人血量低于50%算胜利
-        log: combatLog,
-        damage: enemy.health - enemyHealth,
-        remaining: { player: playerHealth, enemy: enemyHealth }
-    };
-}
-
-/**
- * 显示战斗结果
- */
-function showCombatResult(result) {
-    addDialog('system', '⚔️', '=== 战斗回合 ===');
-
-    for (const entry of result.log) {
-        if (entry.type === 'player') {
-            let text = entry.text;
-            if (entry.crit) text = '🔥 ' + text;
-            addDialog('player', '⚔️', text);
-        } else {
-            let text = entry.text;
-            if (entry.crit) text = '☠️ ' + text;
-            addDialog('npc', '👹', text);
-        }
-    }
-
-    addDialog('system', '─', '─'.repeat(30));
-
-    if (result.victory) {
-        addDialog('system', '🎉', '战斗胜利！');
-        if (result.enemyKilled) {
-            addDialog('system', '🏆', `你击败了${result.enemyKilled}！`);
-        }
-        // 胜利奖励
-        const materials = Math.floor(Math.random() * 20) + 10;
-        gameState.resources.materials += materials;
-        addDialog('system', '📦', `获得物资 +${materials}`);
-    } else if (result.remaining) {
-        addDialog('system', '⚖️', `战斗继续...`);
-        addDialog('system', '❤️', `你剩余: ${result.remaining.player} HP`);
-        addDialog('system', '👹', `敌人剩余: ${result.remaining.enemy} HP`);
-    } else {
-        addDialog('system', '💀', '战斗失败...');
-        addDialog('system', '🩸', '你受到了伤害');
-
-        // 扣除HP
-        const damage = 20;
-        gameState.character.hp = Math.max(0, gameState.character.hp - damage);
-        gameState.character.chaos = Math.min(100, gameState.character.chaos + 10);
-
-        addDialog('system', '❤️', `HP -${damage}`);
-        addDialog('system', '🔮', `混沌值 +10`);
-    }
-
-    updateUI();
-}
-
-// ============================================
-// 敌人类型系统
-// ============================================
-
-const ENEMY_TYPES = {
-    chaos: [
-        { type: '混沌信徒', difficulty: ['simple', 'normal'], description: '被混沌腐蚀的普通士兵' },
-        { type: '混沌冠军', difficulty: ['normal', 'hard'], description: '混沌精英战士' },
-        { type: '灵能者', difficulty: ['hard', 'extreme'], description: '使用混沌灵能的施法者' }
-    ],
-    ork: [
-        { type: '兽人步兵', difficulty: ['simple', 'normal'], description: '绿皮的战争机器' },
-        { type: '兽人军阀', difficulty: ['hard', 'extreme'], description: '强大的兽人指挥官' }
-    ],
-    traitor: [
-        { type: '暗黑天使叛徒', difficulty: ['hard', 'extreme'], description: '堕落的前帝国骑士' }
-    ]
 };
 
-/**
- * 获取随机敌人
- */
-function getRandomEnemy(cardType) {
-    const enemyPool = ENEMY_TYPES[cardType] || ENEMY_TYPES.chaos;
-    const enemy = enemyPool[Math.floor(Math.random() * enemyPool.length)];
-    const difficulty = enemy.difficulty[Math.floor(Math.random() * enemy.difficulty.length)];
-    return { ...enemy, difficulty };
+// ============================================
+// 战斗主函数
+// ============================================
+
+function startCombat(enemyType, difficulty = 'normal') {
+    // 获取敌人
+    const enemyData = getRandomEnemy(enemyType);
+    if (!enemyData) {
+        addDialog('system', '⚠️', '没有找到敌人！');
+        return;
+    }
+
+    // 根据难度调整
+    const difficultyMod = getDifficultyMod(difficulty);
+    
+    const enemy = {
+        ...enemyData,
+        maxHp: Math.floor(enemyData.hp * difficultyMod.hp),
+        hp: Math.floor(enemyData.hp * difficultyMod.hp),
+        attack: Math.floor(enemyData.attack * difficultyMod.attack),
+        defense: Math.floor(enemyData.defense * difficultyMod.defense),
+        difficulty: difficulty,
+        round: 1,
+        maxRound: 5  // 最多5回合
+    };
+
+    // 保存到游戏状态
+    gameState.combatState = {
+        active: true,
+        enemy: enemy,
+        player: {
+            hp: gameState.character.hp,
+            maxHp: gameState.character.maxHp,
+            attack: getPlayerAttack(),
+            defense: getPlayerDefense()
+        },
+        round: 1,
+        log: [],
+        defending: false
+    };
+
+    // 显示战斗界面
+    showCombatInterface(enemy);
+
+    // 战斗开始叙事
+    addDialog('combat', '⚔️', '═══════════════════════════════════');
+    addDialog('combat', '💀', `遭遇敌人：${enemy.name}`);
+    addDialog('combat', '📝', enemy.description);
+    addDialog('combat', '⚔️', '═══════════════════════════════════');
+
+    // 第一回合
+    startCombatRound();
+}
+
+function getDifficultyMod(difficulty) {
+    const mods = {
+        'easy': { hp: 0.7, attack: 0.7, defense: 0.7 },
+        'normal': { hp: 1.0, attack: 1.0, defense: 1.0 },
+        'hard': { hp: 1.3, attack: 1.3, defense: 1.3 }
+    };
+    return mods[difficulty] || mods['normal'];
+}
+
+function getPlayerAttack() {
+    const char = gameState.character;
+    const baseAttack = 10 + char.level * 2;
+    const classBonus = {
+        '极限战士': 5, '狼弟子': 10, '刺客庭刺客': 8,
+        '帝国之拳': 2, '灰骑士': 6, '机械教信徒': 4,
+        '帝国军官': 5, '黑暗天使': 7
+    };
+    return baseAttack + (classBonus[char.class] || 0);
+}
+
+function getPlayerDefense() {
+    const char = gameState.character;
+    const baseDefense = 5 + char.level;
+    const classBonus = {
+        '极限战士': 5, '狼弟子': 2, '刺客庭刺客': 3,
+        '帝国之拳': 10, '灰骑士': 4, '机械教信徒': 6,
+        '帝国军官': 4, '黑暗天使': 3
+    };
+    return baseDefense + (classBonus[char.class] || 0);
+}
+
+function getRandomEnemy(type) {
+    const pool = ENEMY_DATABASE[type] || ENEMY_DATABASE.chaos;
+    const keys = Object.keys(pool);
+    const key = keys[Math.floor(Math.random() * keys.length)];
+    return { name: key, ...pool[key] };
 }
 
 // ============================================
-// 战斗UI增强
+// 战斗回合
 // ============================================
 
-/**
- * 显示战斗面板
- */
-function showCombatPanel(enemy) {
-    const player = getCharacterStats();
+function startCombatRound() {
+    const state = gameState.combatState;
+    if (!state.active) return;
 
-    // 创建战斗面板HTML
-    const combatPanel = document.createElement('div');
-    combatPanel.id = 'combatPanel';
-    combatPanel.className = 'combat-overlay';
-    combatPanel.innerHTML = `
-        <div class="combat-content">
-            <div class="combat-header">
-                <h2>⚔️ 战斗 - ${enemy.type}</h2>
-                <p>${enemy.description}</p>
-            </div>
+    const enemy = state.enemy;
 
-            <div class="combat-stats">
-                <div class="player-stats">
-                    <h3>👤 你的属性</h3>
-                    <p>攻击: ${player.attack}</p>
-                    <p>防御: ${player.defense}</p>
-                    <p>暴击: ${Math.round(player.critRate * 100)}%</p>
-                    <p>连击: ${Math.round(player.comboRate * 100)}%</p>
+    // 回合限制
+    if (state.round > enemy.maxRound) {
+        addDialog('combat', '⏰', `战斗超时！你和${enemy.name}都筋疲力尽...`);
+        endCombat(false, 'timeout');
+        return;
+    }
+
+    // 显示回合
+    addDialog('combat', '🔄', `--- 第 ${state.round} 回合 ---`);
+
+    // 玩家先手
+    playerTurn();
+}
+
+function playerTurn() {
+    const state = gameState.combatState;
+    if (!state.active) return;
+
+    const enemy = state.enemy;
+    const player = state.player;
+
+    // 防御重置
+    state.defending = false;
+
+    // 计算伤害
+    const damage = calculatePlayerDamage(player.attack, enemy.defense);
+    const isCrit = Math.random() < 0.15;  // 15%暴击
+    const finalDamage = isCrit ? Math.floor(damage * 1.5) : damage;
+
+    // 应用伤害
+    enemy.hp -= finalDamage;
+
+    // 叙事
+    const critText = isCrit ? ' ⚡暴击！' : '';
+    const killText = enemy.hp <= 0 ? ' 🏆 致命一击！' : '';
+    addDialog('combat', '⚔️', `你攻击${enemy.name}！${critText}${killText}造成 ${finalDamage} 点伤害`);
+
+    // 记录
+    state.log.push({ round: state.round, type: 'player', damage: finalDamage, crit: isCrit });
+
+    // 检查敌人是否死亡
+    if (enemy.hp <= 0) {
+        enemy.hp = 0;
+        addDialog('combat', '💀', `☠️ ${enemy.name}被你击杀！`);
+        endCombat(true, 'victory');
+        return;
+    }
+
+    // 敌人回合
+    setTimeout(() => enemyTurn(), 800);
+}
+
+function enemyTurn() {
+    const state = gameState.combatState;
+    if (!state.active) return;
+
+    const enemy = state.enemy;
+    const player = state.player;
+
+    // 获取敌人攻击文本
+    const attackTexts = enemy.attackText || ['攻击'];
+    const attackText = attackTexts[Math.floor(Math.random() * attackTexts.length)];
+
+    // 计算伤害
+    let damage = calculateEnemyDamage(enemy.attack, player.defense);
+
+    // 防御减半
+    if (state.defending) {
+        damage = Math.floor(damage * 0.5);
+        addDialog('combat', '🛡️', '防御姿态生效！伤害减半');
+    }
+
+    // 应用伤害
+    player.hp -= damage;
+
+    // 叙事
+    addDialog('combat', '💢', `${enemy.name} ${attackText}！对你造成 ${damage} 点伤害`);
+
+    // 记录
+    state.log.push({ round: state.round, type: 'enemy', damage: damage });
+
+    // 检查玩家是否死亡
+    if (player.hp <= 0) {
+        player.hp = 0;
+        addDialog('combat', '💀', `☠️ 你被${enemy.name}击败了！`);
+        endCombat(false, 'defeat');
+        return;
+    }
+
+    // 回合结束
+    state.round++;
+    updateCombatUI();
+
+    // 下一回合
+    setTimeout(() => startCombatRound(), 800);
+}
+
+function calculatePlayerDamage(attack, defense) {
+    const base = attack - defense;
+    const variance = Math.floor(Math.random() * 5) - 2;  // -2到+2
+    return Math.max(1, base + variance);
+}
+
+function calculateEnemyDamage(attack, defense) {
+    const base = attack - defense;
+    const variance = Math.floor(Math.random() * 8) - 4;  // -4到+4
+    return Math.max(1, base + variance);
+}
+
+// ============================================
+// 战斗结束
+// ============================================
+
+function endCombat(victory, reason) {
+    const state = gameState.combatState;
+    if (!state) return;
+
+    state.active = false;
+    state.victory = victory;
+    state.reason = reason;
+
+    if (victory) {
+        // 发放奖励
+        const rewards = giveCombatRewards(state.enemy);
+        
+        // 更新游戏状态
+        gameState.character.hp = state.player.hp;
+        gameState.stats = gameState.stats || {};
+        gameState.stats.wins = (gameState.stats.wins || 0) + 1;
+        
+        addDialog('combat', '🏆', '═══════════════════════════════════');
+        addDialog('combat', '✅', '战斗胜利！');
+        addDialog('combat', '📦', `获得：${rewards}`);
+        addDialog('combat', '🏆', '═══════════════════════════════════');
+        
+        // 检查成就
+        if (typeof checkAchievements === 'function') {
+            checkAchievements(gameState);
+        }
+    } else {
+        // 失败惩罚
+        const chaosPenalty = reason === 'defeat' ? 10 : 5;
+        gameState.character.chaos = Math.min(100, gameState.character.chaos + chaosPenalty);
+        gameState.character.hp = Math.max(10, state.player.hp);  // 不会死
+        
+        addDialog('combat', '💀', '═══════════════════════════════════');
+        addDialog('combat', '❌', '战斗失败...');
+        addDialog('combat', '🔮', `混沌值+${chaosPenalty}`);
+        addDialog('combat', '💀', '═══════════════════════════════════');
+    }
+
+    // 保存
+    saveGame();
+
+    // 关闭战斗界面
+    setTimeout(() => closeCombatPanel(), 2000);
+}
+
+function giveCombatRewards(enemy) {
+    const rewards = enemy.rewards || { materials: 10 };
+    let rewardText = [];
+    
+    // 应用难度修改器
+    const difficulty = getDifficultyModifier ? getDifficultyModifier('resourceGain') : 1.0;
+    
+    for (const [type, amount] of Object.entries(rewards)) {
+        const finalAmount = Math.floor(amount * (0.8 + Math.random() * 0.4) * difficulty);
+        
+        if (type === 'materials') {
+            gameState.resources.materials = (gameState.resources.materials || 0) + finalAmount;
+            rewardText.push(`${finalAmount}📦`);
+        } else if (type === 'faith') {
+            gameState.character.faith = (gameState.character.faith || 0) + finalAmount;
+            rewardText.push(`${finalAmount}✨`);
+        } else if (type === 'scrap') {
+            gameState.resources.scrap = (gameState.resources.scrap || 0) + finalAmount;
+            rewardText.push(`${finalAmount}🔧`);
+        } else if (type === 'soulFragment') {
+            gameState.resources.soulFragments = (gameState.resources.soulFragments || 0) + finalAmount;
+            rewardText.push(`${finalAmount}💎`);
+        } else if (type === 'holyRelic') {
+            gameState.resources.holyRelics = (gameState.resources.holyRelics || 0) + finalAmount;
+            rewardText.push(`${finalAmount}⚱️`);
+        } else if (type === 'chaos') {
+            // 混沌敌人会污染你
+            gameState.character.chaos = Math.min(100, gameState.character.chaos + finalAmount);
+            rewardText.push(`混沌+${finalAmount}`);
+        }
+    }
+    
+    return rewardText.join(' ');
+}
+
+// ============================================
+// 战斗界面
+// ============================================
+
+function showCombatInterface(enemy) {
+    // 移除旧界面
+    closeCombatPanel();
+
+    const panel = document.createElement('div');
+    panel.id = 'combatPanel';
+    panel.className = 'combat-panel';
+
+    panel.innerHTML = `
+        <div class="combat-header">
+            <h2>⚔️ 战斗</h2>
+            <button class="close-btn" onclick="closeCombatPanel()">×</button>
+        </div>
+        
+        <div class="combat-arena">
+            <!-- 敌人 -->
+            <div class="combat-enemy">
+                <div class="enemy-avatar">${getEnemyEmoji(enemy.name)}</div>
+                <div class="enemy-info">
+                    <h3>${enemy.name}</h3>
+                    <div class="hp-bar">
+                        <div class="hp-fill" id="enemy-hp-fill" style="width: 100%"></div>
+                    </div>
+                    <div class="hp-text" id="enemy-hp-text">${enemy.hp}/${enemy.maxHp}</div>
+                    <div class="enemy-stats">
+                        ⚔️${enemy.attack} 🛡️${enemy.defense}
+                    </div>
                 </div>
+            </div>
 
-                <div class="vs">VS</div>
+            <!-- VS -->
+            <div class="combat-vs">VS</div>
 
-                <div class="enemy-stats">
-                    <h3>👹 ${enemy.type}</h3>
-                    <p>难度: ${enemy.difficulty}</p>
-                    <p class="warning">⚠️ 敌人情报有限</p>
+            <!-- 玩家 -->
+            <div class="combat-player">
+                <div class="player-avatar">👤</div>
+                <div class="player-info">
+                    <h3>${gameState.character.class || '战士'}</h3>
+                    <div class="hp-bar">
+                        <div class="hp-fill player" id="player-hp-fill" style="width: 100%"></div>
+                    </div>
+                    <div class="hp-text" id="player-hp-text">${gameState.character.hp}/${gameState.character.maxHp}</div>
                 </div>
             </div>
+        </div>
 
-            <div class="combat-actions">
-                <button class="combat-btn attack" onclick="startCombat('${enemy.type}', '${enemy.difficulty}')">
-                    ⚔️ 发动攻击
-                </button>
-                <button class="combat-btn defend" onclick="defendAction()">
-                    🛡️ 防御姿态
-                </button>
-                <button class="combat-btn retreat" onclick="retreatAction()">
-                    🏃 撤退
-                </button>
-            </div>
+        <!-- 战斗日志 -->
+        <div class="combat-log" id="combat-log"></div>
 
-            <button class="close-combat" onclick="closeCombatPanel()">×</button>
+        <!-- 行动按钮 -->
+        <div class="combat-actions">
+            <button class="combat-btn attack" onclick="playerTurn()">
+                ⚔️ 攻击
+            </button>
+            <button class="combat-btn defend" onclick="defendAction()">
+                🛡️ 防御
+            </button>
+            <button class="combat-btn retreat" onclick="retreatAction()">
+                🏃 撤退
+            </button>
         </div>
     `;
 
     // 添加样式
     const style = document.createElement('style');
     style.textContent = `
-        .combat-overlay {
+        .combat-panel {
             position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(0, 0, 0, 0.9);
-            display: flex;
-            align-items: center;
-            justify-content: center;
+            background: linear-gradient(180deg, #1a0a0a 0%, #0a0a0a 100%);
             z-index: 1000;
-        }
-
-        .combat-content {
-            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
-            border: 2px solid #e94560;
-            border-radius: 16px;
-            padding: 30px;
-            max-width: 500px;
-            width: 90%;
-            position: relative;
+            display: flex;
+            flex-direction: column;
+            font-family: 'Microsoft YaHei', sans-serif;
         }
 
         .combat-header {
-            text-align: center;
-            margin-bottom: 20px;
-        }
-
-        .combat-header h2 {
-            color: #e94560;
-            margin: 0 0 10px 0;
-        }
-
-        .combat-stats {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 20px;
+            padding: 15px 20px;
+            background: rgba(139, 0, 0, 0.3);
+            border-bottom: 2px solid #8b0000;
         }
 
-        .player-stats, .enemy-stats {
-            background: rgba(0, 0, 0, 0.3);
-            padding: 15px;
-            border-radius: 10px;
+        .combat-header h2 {
+            color: #ff4444;
+            margin: 0;
+            font-size: 24px;
+        }
+
+        .close-btn {
+            background: none;
+            border: none;
+            color: #fff;
+            font-size: 32px;
+            cursor: pointer;
+        }
+
+        .combat-arena {
             flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 20px;
+            padding: 20px;
         }
 
-        .player-stats h3, .enemy-stats h3 {
+        .combat-enemy, .combat-player {
+            text-align: center;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 15px;
+            min-width: 180px;
+        }
+
+        .enemy-avatar, .player-avatar {
+            font-size: 64px;
+            margin-bottom: 10px;
+        }
+
+        .enemy-info h3, .player-info h3 {
             color: #fff;
             margin: 0 0 10px 0;
+            font-size: 18px;
         }
 
-        .player-stats p, .enemy-stats p {
-            color: #a0a0a0;
-            margin: 5px 0;
+        .hp-bar {
+            background: rgba(0, 0, 0, 0.5);
+            height: 20px;
+            border-radius: 10px;
+            overflow: hidden;
+            margin-bottom: 5px;
         }
 
-        .vs {
-            font-size: 24px;
-            color: #e94560;
+        .hp-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #ff4444, #cc0000);
+            transition: width 0.3s ease;
+        }
+
+        .hp-fill.player {
+            background: linear-gradient(90deg, #44ff44, #00cc00);
+        }
+
+        .hp-text {
+            color: #aaa;
+            font-size: 14px;
+        }
+
+        .enemy-stats {
+            color: #888;
+            font-size: 14px;
+            margin-top: 5px;
+        }
+
+        .combat-vs {
+            font-size: 32px;
             font-weight: bold;
-            padding: 0 20px;
+            color: #ff4444;
+        }
+
+        .combat-log {
+            height: 150px;
+            background: rgba(0, 0, 0, 0.3);
+            padding: 10px;
+            overflow-y: auto;
+            font-size: 14px;
+            color: #ddd;
+            border-top: 1px solid #333;
+            border-bottom: 1px solid #333;
+        }
+
+        .combat-log .log-entry {
+            padding: 3px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .combat-log .log-entry.combat {
+            color: #ff6666;
+        }
+
+        .combat-log .log-entry.system {
+            color: #ffff66;
         }
 
         .combat-actions {
-            display: grid;
+            display: flex;
             gap: 10px;
+            padding: 15px;
+            background: rgba(0, 0, 0, 0.5);
         }
 
         .combat-btn {
-            padding: 15px 20px;
+            flex: 1;
+            padding: 15px;
             border: none;
-            border-radius: 8px;
-            font-size: 16px;
+            border-radius: 10px;
+            font-size: 18px;
             cursor: pointer;
-            transition: all 0.3s ease;
+            transition: all 0.2s;
         }
 
         .combat-btn.attack {
-            background: linear-gradient(135deg, #e94560 0%, #c23a51 100%);
+            background: linear-gradient(135deg, #8b0000, #cc0000);
             color: #fff;
         }
 
         .combat-btn.defend {
-            background: linear-gradient(135deg, #4a90d9 0%, #357abd 100%);
+            background: linear-gradient(135deg, #004400, #006600);
             color: #fff;
         }
 
         .combat-btn.retreat {
-            background: rgba(255, 255, 255, 0.1);
-            color: #a0a0a0;
+            background: linear-gradient(135deg, #444, #666);
+            color: #fff;
         }
 
         .combat-btn:hover {
             transform: scale(1.02);
-            box-shadow: 0 5px 20px rgba(233, 69, 96, 0.3);
-        }
-
-        .close-combat {
-            position: absolute;
-            top: 10px;
-            right: 15px;
-            background: none;
-            border: none;
-            color: #fff;
-            font-size: 24px;
-            cursor: pointer;
-        }
-
-        .warning {
-            color: #f59e0b !important;
+            filter: brightness(1.2);
         }
     `;
 
     document.head.appendChild(style);
-    document.body.appendChild(combatPanel);
+    document.body.appendChild(panel);
+
+    // 添加日志
+    addCombatLog(`遭遇 ${enemy.name}！`, 'system');
 }
 
-/**
- * 开始战斗
- */
-function startCombat(enemyType, difficulty) {
-    closeCombatPanel();
-
-    // 执行战斗
-    const result = combatRound(enemyType, difficulty);
-
-    // 显示结果
-    showCombatResult(result);
-}
-
-/**
- * 防御姿态
- */
-function defendAction() {
-    addDialog('system', '🛡️', '你采取防御姿态！');
-    addDialog('system', '✨', '下回合受到的伤害减少50%');
-
-    // 设置防御标记
-    gameState.combatState = {
-        defending: true,
-        defendingTurns: 1
+function getEnemyEmoji(name) {
+    const emojis = {
+        '混沌信徒': '👹', '混沌武士': '💀', '混沌冠军': '👺',
+        '兽人小子': '👺', '兽人军阀': '👿', '太空亡灵': '💀',
+        '堕落骑士': '🗡️'
     };
-
-    closeCombatPanel();
+    return emojis[name] || '👾';
 }
 
-/**
- * 撤退
- */
+function addCombatLog(text, type = 'combat') {
+    const log = document.getElementById('combat-log');
+    if (!log) return;
+
+    const entry = document.createElement('div');
+    entry.className = `log-entry ${type}`;
+    entry.textContent = text;
+    log.appendChild(entry);
+    log.scrollTop = log.scrollHeight;
+}
+
+function updateCombatUI() {
+    const panel = document.getElementById('combatPanel');
+    if (!panel) return;
+
+    const state = gameState.combatState;
+    if (!state) return;
+
+    // 更新敌人血量
+    const enemy = state.enemy;
+    const enemyFill = panel.querySelector('#enemy-hp-fill');
+    const enemyText = panel.querySelector('#enemy-hp-text');
+    if (enemyFill && enemyText) {
+        const hpPercent = Math.max(0, enemy.hp / enemy.maxHp * 100);
+        enemyFill.style.width = hpPercent + '%';
+        enemyText.textContent = `${Math.max(0, enemy.hp)}/${enemy.maxHp}`;
+    }
+
+    // 更新玩家血量
+    const player = state.player;
+    const playerFill = panel.querySelector('#player-hp-fill');
+    const playerText = panel.querySelector('#player-hp-text');
+    if (playerFill && playerText) {
+        const hpPercent = Math.max(0, player.hp / player.maxHp * 100);
+        playerFill.style.width = hpPercent + '%';
+        playerText.textContent = `${Math.max(0, player.hp)}/${player.maxHp}`;
+    }
+}
+
+function defendAction() {
+    if (!gameState.combatState?.active) return;
+
+    gameState.combatState.defending = true;
+    addCombatLog('🛡️ 你进入防御姿态', 'system');
+
+    // 跳到敌人回合
+    setTimeout(() => enemyTurn(), 500);
+}
+
 function retreatAction() {
-    addDialog('system', '🏃', '你选择撤退...');
-    addDialog('system', '💀', '撤退成功，但混沌值+5');
-    addDialog('system', '🔮', '任务失败');
+    if (!gameState.combatState?.active) return;
 
-    gameState.character.chaos = Math.min(100, gameState.character.chaos + 5);
-    gameState.currentCard = null;
-    updateUI();
+    addCombatLog('🏃 你选择了撤退...', 'system');
+    addCombatLog('💀 混沌值+10', 'system');
 
-    closeCombatPanel();
+    gameState.character.chaos = Math.min(100, gameState.character.chaos + 10);
+    endCombat(false, 'retreat');
 }
 
-/**
- * 关闭战斗面板
- */
 function closeCombatPanel() {
     const panel = document.getElementById('combatPanel');
     if (panel) {
@@ -530,175 +670,16 @@ function closeCombatPanel() {
 }
 
 // ============================================
-// 导出函数到全局
+// 导出
 // ============================================
 
-window.getCharacterStats = getCharacterStats;
-window.getEnemyStats = getEnemyStats;
-window.calculateDamage = calculateDamage;
-window.combatRound = combatRound;
-window.showCombatResult = showCombatResult;
-window.getRandomEnemy = getRandomEnemy;
-window.showCombatPanel = showCombatPanel;
 window.startCombat = startCombat;
+window.getRandomEnemy = getRandomEnemy;
+window.playerTurn = playerTurn;
+window.enemyTurn = enemyTurn;
+window.endCombat = endCombat;
+window.closeCombatPanel = closeCombatPanel;
 window.defendAction = defendAction;
 window.retreatAction = retreatAction;
-window.closeCombatPanel = closeCombatPanel;
-
-
-// ============================================
-// 缺失函数实现 - 2026-02-02
-// ============================================
-
-/**
- * 玩家攻击
- */
-function playerAttack(targetIndex = 0) {
-    if (!gameState.combatState.active) {
-        addDialog('system', '⚠️', '战斗未开始！');
-        return false;
-    }
-    
-    const stats = getCharacterStats();
-    const enemy = gameState.combatState.enemies[targetIndex];
-    
-    if (!enemy || enemy.hp <= 0) {
-        addDialog('system', '⚠️', '目标不存在或已死亡！');
-        return false;
-    }
-    
-    // 计算伤害
-    const baseDamage = calculateDamage(stats.attack, enemy.defense);
-    const isCrit = Math.random() < stats.critRate;
-    const finalDamage = isCrit ? baseDamage * stats.critDamage : baseDamage;
-    
-    // 应用伤害
-    enemy.hp -= Math.floor(finalDamage);
-    
-    // 叙事
-    const critText = isCrit ? ' ⚡暴击！' : '';
-    addDialog('combat', '⚔️', );
-    
-    // 检查敌人是否死亡
-    if (enemy.hp <= 0) {
-        addDialog('combat', '💀', `${enemy.name}被你击败！`);
-        gameState.combatState.defeatedCount++;
-    }
-    
-    updateCombatUI();
-    return checkCombatEnd();
-}
-
-/**
- * 敌人回合
- */
-function enemyTurn() {
-    if (!gameState.combatState.active) return false;
-    
-    const enemy = gameState.combatState.currentEnemy;
-    const stats = getCharacterStats();
-    
-    if (!enemy || enemy.hp <= 0) return true;
-    
-    // 敌人攻击
-    const baseDamage = calculateDamage(enemy.attack, stats.defense);
-    let finalDamage = baseDamage;
-    
-    // 防御姿态减伤
-    if (gameState.combatState.defending) {
-        finalDamage *= 0.5;
-        addDialog('combat', '🛡️', `防御姿态生效！伤害减半至{finalDamage:.1f}`);
-    }
-    
-    // 应用伤害
-    gameState.character.hp -= Math.floor(finalDamage);
-    
-    // 叙事
-    addDialog('combat', '💢', `{enemy.name}攻击你！造成{finalDamage:.1f}点伤害`);
-    
-    // 检查玩家是否死亡
-    if (gameState.character.hp <= 0) {
-        addDialog('combat', '💀', '你被击败了！');
-        gameState.combatState.playerDefeated = true;
-    }
-    
-    updateCombatUI();
-    return checkCombatEnd();
-}
-
-/**
- * 检查战斗是否结束
- */
-function checkCombatEnd() {
-    if (gameState.combatState.playerDefeated) {
-        // 玩家失败
-        gameState.combatState.active = false;
-        addDialog('combat', '☠️', '战斗失败...混沌值+10');
-        gameState.character.chaos = Math.min(100, gameState.character.chaos + 10);
-        showCombatResult({ victory: false, damage: 0 });
-        return false;
-    }
-    
-    // 检查是否所有敌人死亡
-    const aliveEnemies = gameState.combatState.enemies.filter(e => e.hp > 0);
-    if (aliveEnemies.length === 0) {
-        // 胜利
-        gameState.combatState.active = false;
-        const rewards = calculateRewards();
-        addDialog('combat', '🏆', '战斗胜利！');
-        addDialog('combat', '📦', `获得：{rewards.materials}物资，+{rewards.faith}信仰`);
-        showCombatResult({ victory: true, ...rewards });
-        return true;
-    }
-    
-    return true; // 继续战斗
-}
-
-/**
- * 计算战斗奖励
- */
-function calculateRewards() {
-    const enemy = gameState.combatState.currentEnemy;
-    const baseMaterials = enemy?.materials || 20;
-    const baseFaith = enemy?.faith || 5;
-    
-    return {
-        materials: Math.floor(baseMaterials * (1 + Math.random() * 0.5)),
-        faith: Math.floor(baseFaith * (1 + Math.random() * 0.5))
-    };
-}
-
-/**
- * 更新战斗UI
- */
-function updateCombatUI() {
-    const combatPanel = document.getElementById('combatPanel');
-    if (!combatPanel) return;
-    
-    // 更新玩家血量
-    const playerHpEl = combatPanel.querySelector('.player-hp');
-    if (playerHpEl) {
-        const maxHp = gameState.character.maxHp || 100;
-        playerHpEl.innerHTML = `❤️ 生命: {gameState.character.hp}/{maxHp}`;
-    }
-    
-    // 更新敌人血量
-    const enemyList = combatPanel.querySelector('.enemy-list');
-    if (enemyList) {
-        const enemies = gameState.combatState.enemies || [];
-        enemyList.innerHTML = enemies.map((e, i) => `
-            <div class="enemy-item ${e.hp <= 0 ? 'defeated' : ''}">
-                <span>${e.name}</span>
-                <span class="enemy-hp">${e.hp}/{e.maxHp}</span>
-                ${e.hp > 0 ? `<button onclick="playerAttack(${i})">攻击</button>` : '<span>已死亡</span>'}
-            </div>
-        `).join('');
-    }
-}
-
-
-// 初始化战斗状态
-gameState.combatState = {
-    defending: false,
-    defendingTurns: 0
-};
+window.updateCombatUI = updateCombatUI;
+window.ENEMY_DATABASE = ENEMY_DATABASE;
