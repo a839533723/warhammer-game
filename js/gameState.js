@@ -453,60 +453,46 @@ function initGame() {
 }
 
 /**
- * 引导阶段 - AI介绍背景
+ * 引导阶段 - 显示预设开场白
  */
 function startGuidePhase() {
-    // 显示开场白
+    // 显示标题
     addDialog('system', '🌌', '【战锤40K：虚空黎明 v0.3.1】');
-    addDialog('system', '👩', '你好，战士。正在连接伊莲娜...');
-    
-    // 调用AI生成增强版开场白
-    setTimeout(async () => {
-        const enhancedGuide = await aiSystem.generateEnhancedGuide();
-        
-        if (enhancedGuide) {
-            // 分段显示AI生成的文本
-            const paragraphs = enhancedGuide.split('\n\n');
-            for (const para of paragraphs) {
-                if (para.trim()) {
-                    addDialog('npc', '👩', para);
-                    await new Promise(r => setTimeout(r, 500));
-                }
-            }
-        } else {
-            // AI失败时使用预设文本
-            showDefaultGuide();
+
+    // 使用预设开场白（立即显示，不再等待AI）
+    const guideText = window.getGuideText ? window.getGuideText() : getGuideTextFallback();
+
+    // 分段显示开场白
+    const paragraphs = guideText.split('\n\n');
+    let delay = 0;
+    for (const para of paragraphs) {
+        if (para.trim()) {
+            setTimeout(() => {
+                addDialog('npc', '👩', para);
+            }, delay);
+            delay += 800;  // 每段间隔800ms
         }
-    }, 1000);
+    }
+
+    // 最后显示提示
+    setTimeout(() => {
+        addDialog('system', '💡', '【点击下方"开始任务"按钮开始冒险】');
+    }, delay + 500);
 }
 
 /**
- * 显示默认引导文本（当AI不可用时）
+ * 获取开场白后备（当getGuideText不可用时）
  */
-function showDefaultGuide() {
-    const guideText = `黑暗中，你睁开双眼，感受到冰冷的金属地板贴着你的肌肤。
+function getGuideTextFallback() {
+    return `刺眼的光芒消退后，你发现自己躺在一片废墟之中。
 
-你是${gameState.character.class}，帝国最忠诚的战士之一。此刻你身处麦加托普星球——极限战士战团的母星，但这里已经不再是曾经的圣地。
+作为极限战士，你见过太多战场，但麦加托普的沦陷速度远超你的预料。混沌的腐化如同毒液，已经渗透进这个星球的每一个角落。
 
-混沌的阴影正在蔓延。兽人的入侵、混沌信徒的渗透、内鬼的背叛...这座星球正处在崩溃的边缘。
+你的通讯器传来断断续续的信号："...需要...支援...混沌已经..."
 
-你的任务是通过完成各种挑战卡牌来生存：
-• 🃏 每回合抽取一张任务卡牌
-• ⏰ 必须在3个回合内完成任务
-• 💀 超时未完成：混沌值+30
-• 🔮 混沌值达到100：你将堕落
+你必须振作起来。每一张卡牌任务都是一次考验，每一次选择都可能决定你的命运。
 
-任务类型：
-• 🔴 混沌卡：找出内鬼（狼人杀）
-• 🟡 信仰卡：完成帝皇的旨意  
-• ⚔️ 战斗卡：击败敌人
-• 💕 眷属卡：获取追随者
-
-你准备好了吗，战士？
-
-【点击下方"开始任务"按钮开始冒险】`;
-
-    addDialog('npc', '👩', guideText);
+帝国需要你。点击'开始任务'开始你的行动。`;
 }
 
 /**
