@@ -551,6 +551,27 @@ body {
     padding: 20px;
     margin-bottom: 20px;
     border: 2px solid #8b5cf6;
+    transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.card-section.chaos {
+    border-color: #ef4444;
+    box-shadow: 0 0 15px rgba(239, 68, 68, 0.3);
+}
+
+.card-section.faith {
+    border-color: #fbbf24;
+    box-shadow: 0 0 15px rgba(251, 191, 36, 0.3);
+}
+
+.card-section.combat {
+    border-color: #3b82f6;
+    box-shadow: 0 0 15px rgba(59, 130, 246, 0.3);
+}
+
+.card-section.devotion {
+    border-color: #ec4899;
+    box-shadow: 0 0 15px rgba(236, 72, 153, 0.3);
 }
 
 .section-title {
@@ -1277,4 +1298,166 @@ body {
 
 .elena-input-area button:hover {
     background: #7c3aed;
+}
+
+/* ==================== 抽卡动画效果 ==================== */
+
+/* 抽卡动画 */
+@keyframes cardDraw {
+    0% {
+        opacity: 0;
+        transform: translateY(-50px) scale(0.8);
+    }
+    50% {
+        transform: translateY(10px) scale(1.05);
+    }
+    100% {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+@keyframes cardReveal {
+    0% {
+        opacity: 0;
+        transform: rotateY(90deg);
+    }
+    100% {
+        opacity: 1;
+        transform: rotateY(0);
+    }
+}
+
+@keyframes cardGlow {
+    0% {
+        box-shadow: 0 0 5px rgba(139, 92, 246, 0.5);
+    }
+    50% {
+        box-shadow: 0 0 20px rgba(139, 92, 246, 0.8), 0 0 40px rgba(139, 92, 246, 0.4);
+    }
+    100% {
+        box-shadow: 0 0 5px rgba(139, 92, 246, 0.5);
+    }
+}
+
+.card-draw-animation {
+    animation: cardDraw 0.6s ease-out forwards;
+}
+
+.card-draw-animation::before {
+    content: '';
+    position: absolute;
+    top: -2px;
+    left: -2px;
+    right: -2px;
+    bottom: -2px;
+    background: linear-gradient(45deg, transparent 40%, rgba(139, 92, 246, 0.8) 50%, transparent 60%);
+    background-size: 200% 200%;
+    animation: cardGlow 1.5s ease-in-out infinite;
+    z-index: -1;
+    border-radius: 14px;
+}
+
+/* 当前任务卡样式增强 */
+.current-card-display {
+    position: relative;
+    padding: 20px;
+    background: linear-gradient(135deg, #1e1e3f 0%, #2d2d5a 100%);
+    border-radius: 12px;
+    border: 2px solid #4a5568;
+    overflow: hidden;
+}
+
+.current-card-display.chaos {
+    border-color: #ef4444;
+    background: linear-gradient(135deg, #3f1e1e 0%, #5a2d2d 100%);
+}
+
+.current-card-display.faith {
+    border-color: #fbbf24;
+    background: linear-gradient(135deg, #3f3a1e 0%, #5a542d 100%);
+}
+
+.current-card-display.combat {
+    border-color: #3b82f6;
+    background: linear-gradient(135deg, #1e3f3f 0%, #2d5a5a 100%);
+}
+
+.current-card-display.devotion {
+    border-color: #ec4899;
+    background: linear-gradient(135deg, #3f1e3f 0%, #5a2d5a 100%);
+}
+
+.current-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+}
+
+.current-card-type {
+    font-size: 14px;
+    font-weight: bold;
+    padding: 4px 12px;
+    border-radius: 20px;
+    background: rgba(139, 92, 246, 0.2);
+}
+
+.current-card-type.chaos { background: rgba(239, 68, 68, 0.2); color: #ef4444; }
+.current-card-type.faith { background: rgba(251, 191, 36, 0.2); color: #fbbf24; }
+.current-card-type.combat { background: rgba(59, 130, 246, 0.2); color: #3b82f6; }
+.current-card-type.devotion { background: rgba(236, 72, 153, 0.2); color: #ec4899; }
+
+.current-card-difficulty {
+    font-size: 12px;
+    color: #a0a0a0;
+}
+
+.current-card-name {
+    font-size: 20px;
+    font-weight: bold;
+    color: #fff;
+    margin-bottom: 10px;
+}
+
+.current-card-description {
+    font-size: 14px;
+    color: #d0d0d0;
+    margin-bottom: 15px;
+    line-height: 1.6;
+}
+
+.current-card-progress {
+    display: flex;
+    justify-content: space-between;
+    font-size: 12px;
+    color: #a0a0a0;
+    margin-bottom: 15px;
+    padding: 10px;
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 8px;
+}
+
+.current-card-rewards {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.reward-item {
+    font-size: 13px;
+    color: #4ade80;
+    padding: 8px 12px;
+    background: rgba(74, 222, 128, 0.1);
+    border-radius: 6px;
+    border-left: 3px solid #4ade80;
+}
+
+.penalty-item {
+    font-size: 13px;
+    color: #f87171;
+    padding: 8px 12px;
+    background: rgba(248, 113, 113, 0.1);
+    border-radius: 6px;
+    border-left: 3px solid #f87171;
 }

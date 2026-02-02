@@ -340,9 +340,15 @@ function updateCurrentCardUI() {
     if (card.penalty && card.penalty.chaosIncrease) {
         penaltyHTML = '<div class="penalty-item">💀 失败：混沌值+' + card.penalty.chaosIncrease + '</div>';
     }
-    
+
+    // 检查是否是新抽的卡（用于动画）
+    const isNewCard = cardArea.getAttribute('data-card-id') !== card.id;
+
+    // 添加动画类
+    const animationClass = isNewCard ? 'card-draw-animation' : '';
+
     cardArea.innerHTML = `
-        <div class="current-card-display ${card.type}" style="border-color: ${typeColors[card.type]}">
+        <div class="current-card-display ${card.type} ${animationClass}" style="border-color: ${typeColors[card.type]}">
             <div class="current-card-header">
                 <span class="current-card-type ${card.type}">【${typeNames[card.type]}卡】</span>
                 <span class="current-card-difficulty">${card.difficulty}</span>
@@ -359,7 +365,16 @@ function updateCurrentCardUI() {
             </div>
         </div>
     `;
-    
+
+    // 更新card-section的class（根据卡牌类型改变颜色）
+    const cardSection = document.getElementById('cardSection');
+    if (cardSection) {
+        cardSection.className = 'card-section ' + card.type;
+    }
+
+    // 更新cardId属性
+    cardArea.setAttribute('data-card-id', card.id);
+
     cardInfo.textContent = `【${typeNames[card.type]}】${card.name}`;
     cardTimer.textContent = `剩余回合：${gameState.maxCardProgress - gameState.cardProgress}`;
 }
