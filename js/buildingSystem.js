@@ -548,6 +548,72 @@ function processBuildingProduction() {
 }
 
 // ============================================
+
+// ============================================
+// 缺失函数 - 2026-02-02
+// ============================================
+
+/**
+ * 收集建筑产出
+ */
+function collectResources() {
+    if (!gameState.buildings || Object.keys(gameState.buildings).length === 0) {
+        addDialog('system', '⚠️', '还没有建造任何建筑！');
+        return false;
+    }
+    
+    let collected = {
+        materials: 0,
+        faith: 0,
+        intelligence: 0,
+        followers: 0
+    };
+    
+    for (const [buildingId, level] of Object.entries(gameState.buildings)) {
+        if (level <= 0) continue;
+        
+        const building = BUILDINGS[buildingId];
+        if (building && building.production) {
+            const amount = (building.production[level - 1] || 0);
+            const type = building.type || 'materials';
+            
+            collected[type] = (collected[type] || 0) + amount;
+            
+            if (amount > 0) {
+                resourceSystem.modify(type, amount);
+            }
+        }
+    }
+    
+    // 显示收集结果
+    const results = Object.entries(collected)
+        .filter(([_, v]) => v > 0)
+        .map(([k, v]) => `${v}${getResourceIcon(k)}`)
+        .join(' ');
+    
+    if (results) {
+        addDialog('system', '📦', `建筑产出：${results}`);
+    } else {
+        addDialog('system', '📦', '本周期的建筑产出较少。');
+    }
+    
+    return collected;
+}
+
+/**
+ * 获取资源图标
+ */
+function getResourceIcon(type) {
+    const icons = {
+        'materials': '📦',
+        'faith': '✨',
+        'intelligence': '🔍',
+        'followers': '👥'
+    };
+    return icons[type] || '';
+}
+
+
 // 导出函数到全局
 // ============================================
 

@@ -545,6 +545,158 @@ window.defendAction = defendAction;
 window.retreatAction = retreatAction;
 window.closeCombatPanel = closeCombatPanel;
 
+
+// ============================================
+// 缺失函数实现 - 2026-02-02
+// ============================================
+
+/**
+ * 玩家攻击
+ */
+function playerAttack(targetIndex = 0) {
+    if (!gameState.combatState.active) {
+        addDialog('system', '⚠️', '战斗未开始！');
+        return false;
+    }
+    
+    const stats = getCharacterStats();
+    const enemy = gameState.combatState.enemies[targetIndex];
+    
+    if (!enemy || enemy.hp <= 0) {
+        addDialog('system', '⚠️', '目标不存在或已死亡！');
+        return false;
+    }
+    
+    // 计算伤害
+    const baseDamage = calculateDamage(stats.attack, enemy.defense);
+    const isCrit = Math.random() < stats.critRate;
+    const finalDamage = isCrit ? baseDamage * stats.critDamage : baseDamage;
+    
+    // 应用伤害
+    enemy.hp -= Math.floor(finalDamage);
+    
+    // 叙事
+    const critText = isCrit ? ' ⚡暴击！' : '';
+    addDialog('combat', '⚔️', );
+    
+    // 检查敌人是否死亡
+    if (enemy.hp <= 0) {
+        addDialog('combat', '💀', `${enemy.name}被你击败！`);
+        gameState.combatState.defeatedCount++;
+    }
+    
+    updateCombatUI();
+    return checkCombatEnd();
+}
+
+/**
+ * 敌人回合
+ */
+function enemyTurn() {
+    if (!gameState.combatState.active) return false;
+    
+    const enemy = gameState.combatState.currentEnemy;
+    const stats = getCharacterStats();
+    
+    if (!enemy || enemy.hp <= 0) return true;
+    
+    // 敌人攻击
+    const baseDamage = calculateDamage(enemy.attack, stats.defense);
+    let finalDamage = baseDamage;
+    
+    // 防御姿态减伤
+    if (gameState.combatState.defending) {
+        finalDamage *= 0.5;
+        addDialog('combat', '🛡️', `防御姿态生效！伤害减半至{finalDamage:.1f}`);
+    }
+    
+    // 应用伤害
+    gameState.character.hp -= Math.floor(finalDamage);
+    
+    // 叙事
+    addDialog('combat', '💢', `{enemy.name}攻击你！造成{finalDamage:.1f}点伤害`);
+    
+    // 检查玩家是否死亡
+    if (gameState.character.hp <= 0) {
+        addDialog('combat', '💀', '你被击败了！');
+        gameState.combatState.playerDefeated = true;
+    }
+    
+    updateCombatUI();
+    return checkCombatEnd();
+}
+
+/**
+ * 检查战斗是否结束
+ */
+function checkCombatEnd() {
+    if (gameState.combatState.playerDefeated) {
+        // 玩家失败
+        gameState.combatState.active = false;
+        addDialog('combat', '☠️', '战斗失败...混沌值+10');
+        gameState.character.chaos = Math.min(100, gameState.character.chaos + 10);
+        showCombatResult({ victory: false, damage: 0 });
+        return false;
+    }
+    
+    // 检查是否所有敌人死亡
+    const aliveEnemies = gameState.combatState.enemies.filter(e => e.hp > 0);
+    if (aliveEnemies.length === 0) {
+        // 胜利
+        gameState.combatState.active = false;
+        const rewards = calculateRewards();
+        addDialog('combat', '🏆', '战斗胜利！');
+        addDialog('combat', '📦', `获得：{rewards.materials}物资，+{rewards.faith}信仰`);
+        showCombatResult({ victory: true, ...rewards });
+        return true;
+    }
+    
+    return true; // 继续战斗
+}
+
+/**
+ * 计算战斗奖励
+ */
+function calculateRewards() {
+    const enemy = gameState.combatState.currentEnemy;
+    const baseMaterials = enemy?.materials || 20;
+    const baseFaith = enemy?.faith || 5;
+    
+    return {
+        materials: Math.floor(baseMaterials * (1 + Math.random() * 0.5)),
+        faith: Math.floor(baseFaith * (1 + Math.random() * 0.5))
+    };
+}
+
+/**
+ * 更新战斗UI
+ */
+function updateCombatUI() {
+    const combatPanel = document.getElementById('combatPanel');
+    if (!combatPanel) return;
+    
+    // 更新玩家血量
+    const playerHpEl = combatPanel.querySelector('.player-hp');
+    if (playerHpEl) {
+        const maxHp = gameState.character.maxHp || 100;
+        playerHpEl.innerHTML = `❤️ 生命: {gameState.character.hp}/{maxHp}`;
+    }
+    
+    // 更新敌人血量
+    const enemyList = combatPanel.querySelector('.enemy-list');
+    if (enemyList) {
+        const enemies = gameState.combatState.enemies || [];
+        enemyList.innerHTML = enemies.map((e, i) => `
+            <div class="enemy-item ${e.hp <= 0 ? 'defeated' : ''}">
+                <span>${e.name}</span>
+                <span class="enemy-hp">${e.hp}/{e.maxHp}</span>
+                ${e.hp > 0 ? `<button onclick="playerAttack(${i})">攻击</button>` : '<span>已死亡</span>'}
+            </div>
+        `).join('');
+    }
+}
+
+
 // 初始化战斗状态
 gameState.combatState = {
     defending: false,

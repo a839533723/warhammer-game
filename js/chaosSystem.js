@@ -398,5 +398,66 @@ class ChaosSystem {
     }
 }
 
+
+// ============================================
+// 缺失函数别名 - 2026-02-02
+// ============================================
+
+/**
+ * 更新混沌值（别名）
+ */
+function updateChaos(amount) {
+    if (amount > 0) {
+        chaosSystem.addChaos(amount);
+    } else {
+        chaosSystem.purify(-amount);
+    }
+    return chaosSystem.chaosValue;
+}
+
+/**
+ * 应用混沌效果
+ */
+function applyChaosEffect(effectType) {
+    const effects = {
+        '幻觉': () => {
+            const hallucination = chaosSystem.generateHallucination();
+            addDialog('npc', '👁️', hallucination);
+        },
+        '属性下降': () => {
+            addDialog('system', '⚠️', '混沌侵蚀！攻击和防御暂时下降');
+            gameState.character.attack = (gameState.character.attack || 10) - 3;
+        },
+        '信仰动摇': () => {
+            addDialog('npc', '💀', '你的信仰正在动摇...');
+            gameState.character.faith = Math.max(0, gameState.character.faith - 5);
+        }
+    };
+    
+    if (effects[effectType]) {
+        effects[effectType]();
+        return true;
+    }
+    return false;
+}
+
+/**
+ * 检查混沌状态
+ */
+function checkChaosState() {
+    const phase = chaosSystem.checkPhase();
+    const penalties = chaosSystem.getPenalties();
+    const phaseInfo = chaosSystem.getPhaseInfo();
+    
+    return {
+        phase: phase,
+        value: chaosSystem.chaosValue,
+        phaseInfo: phaseInfo,
+        penalties: penalties,
+        warnings: chaosSystem.generateHallucination()
+    };
+}
+
+
 // 创建实例并导出
 window.chaosSystem = new ChaosSystem();

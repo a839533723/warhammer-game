@@ -516,3 +516,52 @@ window.getNPCDialogue = getNPCDialogue;
 window.getEventDescription = getEventDescription;
 window.getElenaTip = getElenaTip;
 window.getTaskEvaluation = getTaskEvaluation;
+
+
+// ============================================
+// 缺失函数实现 - 2026-02-02
+// ============================================
+
+/**
+ * 获取随机事件
+ */
+function getRandomEvent(excludeTypes = []) {
+    const eventTypes = Object.keys(RANDOM_EVENTS).filter(t => !excludeTypes.includes(t));
+    const type = eventTypes[Math.floor(Math.random() * eventTypes.length)];
+    const events = RANDOM_EVENTS[type];
+    return {
+        type: type,
+        ...events[Math.floor(Math.random() * events.length)]
+    };
+}
+
+/**
+ * 获取混沌幻觉
+ */
+function getChaosHallucination(chaosValue) {
+    if (chaosValue < 20) {
+        return '一切正常。';
+    } else if (chaosValue < 40) {
+        const light = CHAOS_HALLUCINATIONS.light || [];
+        return light[Math.floor(Math.random() * light.length)];
+    } else if (chaosValue < 60) {
+        const corrupt = CHAOS_HALLUCINATIONS.corrupt || [];
+        return corrupt[Math.floor(Math.random() * corrupt.length)];
+    } else if (chaosValue < 80) {
+        const heavy = CHAOS_HALLUCINATIONS.heavy || [];
+        return heavy[Math.floor(Math.random() * heavy.length)];
+    } else {
+        return '你的视野被混沌吞噬...';
+    }
+}
+
+/**
+ * 获取审判对话
+ */
+function getTrialDialogue(trialType, outcome = 'pending') {
+    if (outcome !== 'pending') {
+        return TRIAL_DIALOGUES[outcome] || '审判结束。';
+    }
+    return TRIAL_DIALOGUES[trialType] || TRIAL_DIALOGUES.chaos || '接受审判吧，堕落者！';
+}
+

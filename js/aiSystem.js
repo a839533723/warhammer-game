@@ -437,6 +437,65 @@ window.aiSystem = {
     }
 };
 
+
+// ============================================
+// 缺失函数实现 - 2026-02-02
+// ============================================
+
+/**
+ * 获取剧情响应
+ */
+function getStoryResponse(storyEvent, context = {}) {
+    const eventDialogues = PRESETS.events[storyEvent];
+    if (eventDialogues) {
+        const options = eventDialogues[context.subtype] || eventDialogues;
+        return Array.isArray(options) ? options[Math.floor(Math.random() * options.length)] : options;
+    }
+    return getPreset('default_story');
+}
+
+/**
+ * 生成响应（AI风格包装）
+ */
+async function generateResponse(input, context = {}) {
+    // 由于是预设系统，使用预设对话
+    // 未来可以接入真实AI API
+    const keywords = extractKeywords(input);
+    const response = getNPCDialogue(context.npcId || 'generic', context.trustLevel || 5);
+    return response;
+}
+
+/**
+ * 提取关键词
+ */
+function extractKeywords(text) {
+    const keywords = [];
+    const keywordPatterns = ['战斗', '混沌', '追随者', '建筑', '任务', '调查'];
+    
+    for (const pattern of keywordPatterns) {
+        if (text.includes(pattern)) {
+            keywords.push(pattern);
+        }
+    }
+    return keywords;
+}
+
+/**
+ * 更新剧情进度
+ */
+function updateStoryProgress(event, value = 1) {
+    if (!storyProgress[event]) {
+        storyProgress[event] = 0;
+    }
+    storyProgress[event] += value;
+    
+    // 检查剧情里程碑
+    checkStoryProgress();
+    
+    return storyProgress[event];
+}
+
+
 // 导出进度系统
 window.storyProgress = storyProgress;
 window.advanceStory = advanceStory;
