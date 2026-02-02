@@ -507,10 +507,10 @@ async function askElena(questionType) {
     loadingDiv.textContent = '伊莲娜正在思考...';
     messagesContainer.appendChild(loadingDiv);
     messagesContainer.scrollTop = messagesContainer.scrollHeight;
-    
-    // 调用AI
-    const response = await aiSystem.generateElenaTip(questionType);
-    
+
+    // 使用预设对话（不再调用AI）
+    const response = getElenaTip(questionType);
+
     // 移除加载状态
     document.getElementById('elenaLoading')?.remove();
     
@@ -566,26 +566,39 @@ async function sendToElena() {
 - 当前任务：${currentCard?.name || '无'}
 - 任务类型：${currentCard?.type || '无'}
 
-玩家问题：${question}
+请用中文回答玩家的问题，符合伊莲娜的姐姐口吻。`;
 
-请用中文回答玩家的问题，符合伊莲娜的姐姐口吻，50-100字。`;
-    
-    const response = await aiSystem.callQwen(prompt, 250);
-    
-    document.getElementById('elenaLoading')?.remove();
-    
-    if (response) {
-        const messageDiv = document.createElement('div');
-        messageDiv.className = 'elena-message';
-        messageDiv.textContent = response;
-        messagesContainer.appendChild(messageDiv);
+    // 使用预设对话（不再调用AI）
+    // 根据问题关键词选择合适的预设回答
+    let response = '';
+    const questionLower = question.toLowerCase();
+
+    if (questionLower.includes('任务') || questionLower.includes('卡')) {
+        response = getElenaTip('card');
+    } else if (questionLower.includes('混沌')) {
+        response = getElenaTip('chaos');
+    } else if (questionLower.includes('怎么') || questionLower.includes('做') || questionLower.includes('策略')) {
+        response = getElenaTip('strategy');
+    } else if (questionLower.includes('玩法') || questionLower.includes('游戏')) {
+        response = getElenaTip('general');
     } else {
-        const messageDiv = document.createElement('div');
-        messageDiv.className = 'elena-message';
-        messageDiv.textContent = '姐姐今天有点累了...换别的问题吧。';
-        messagesContainer.appendChild(messageDiv);
+        // 通用回答（根据当前状态）
+        if (gameState.character.chaos > 50) {
+            response = '小鬼，你混沌值有点高啊...小心点，别被混沌影响了。记住，不管发生什么，姐姐都会帮你的。';
+        } else if (gameState.turn > 10) {
+            response = '战斗已经持续很久了...你还好吗？坚持住，胜利就在前方！';
+        } else {
+            response = getElenaTip('general');
+        }
     }
-    
+
+    document.getElementById('elenaLoading')?.remove();
+
+    const messageDiv = document.createElement('div');
+    messageDiv.className = 'elena-message';
+    messageDiv.textContent = response;
+    messagesContainer.appendChild(messageDiv);
+
     messagesContainer.scrollTop = messagesContainer.scrollHeight;
 }
 

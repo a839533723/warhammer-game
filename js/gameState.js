@@ -540,19 +540,17 @@ async function drawCard() {
     gameState.currentCard = card;
     gameState.cardProgress = 0;
     gameState.hand = [card];
-    
+
     addDialog('system', '🃏', `【${getCardTypeName(type)}卡】`);
-    
-    // 调用AI生成事件描写
-    const eventDesc = await aiSystem.generateEventDescription(card);
-    
+
+    // 使用预设事件描写（不再调用AI）
+    const eventDesc = getEventDescription(card.type);
     if (eventDesc) {
         addDialog('npc', '🌍', eventDesc);
     } else {
-        // AI失败时使用预设文本
         addDialog('npc', '📜', card.description);
     }
-    
+
     addDialog('system', '⏰', `任务期限：${gameState.maxCardProgress}回合`);
     
     // 根据卡牌类型显示提示
@@ -770,31 +768,26 @@ async function interrogate(npcId) {
         addDialog('system', '⚠️', '找不到该NPC');
         return;
     }
-    
-    // 调用AI生成NPC对话
-    const dialogue = await aiSystem.generateNPCDialogue(npcId);
-    
-    if (dialogue) {
-        addDialog('npc', '💬', `${npc.name}：${dialogue}`);
-    } else {
-        // AI失败时使用预设对话
-        const presetDialogue = npc.dialogue[Math.floor(Math.random() * npc.dialogue.length)];
-        addDialog('npc', '💬', `${npc.name}：${presetDialogue}`);
-    }
-    
+
+    // 使用预设对话系统（不再调用AI）
+    const trustLevel = gameState.npcs[npcId].trust;
+    const dialogue = getNPCDialogue(npcId, trustLevel);
+
+    addDialog('npc', '💬', `${npc.name}：${dialogue}`);
+
     // 收集线索（可能是真线索或假线索，取决于混沌值）
     const chaosBonus = gameState.character.chaos > 50 ? 0.3 : 0;
     const isFalseClue = Math.random() < chaosBonus;
-    
+
     const clue = {
         npcId: npcId,
         text: npc.clues[Math.floor(Math.random() * npc.clues.length)],
         isFalse: isFalseClue,
         turn: gameState.turn
     };
-    
+
     gameState.investigation.evidence.push(clue);
-    
+
     setTimeout(() => {
         if (isFalseClue) {
             addDialog('system', '🔮', '你的心智受到混沌干扰，这条线索可能是幻觉...');
@@ -802,7 +795,7 @@ async function interrogate(npcId) {
             addDialog('system', '📝', `获得线索：${clue.text}`);
         }
     }, 500);
-    
+
     updateUI();
 }
 
