@@ -499,7 +499,8 @@ function hideElenaChat() {
 
 async function askElena(questionType) {
     const messagesContainer = document.getElementById('elenaMessages');
-    
+    if (!messagesContainer) return;
+
     // 添加加载状态
     const loadingDiv = document.createElement('div');
     loadingDiv.className = 'elena-message';
@@ -509,23 +510,17 @@ async function askElena(questionType) {
     messagesContainer.scrollTop = messagesContainer.scrollHeight;
 
     // 使用预设对话（不再调用AI）
-    const response = getElenaTip(questionType);
+    // 显式使用window.getElenaTip确保函数可访问
+    const response = window.getElenaTip ? window.getElenaTip(questionType) : '预设加载失败...';
 
     // 移除加载状态
-    document.getElementById('elenaLoading')?.remove();
-    
-    if (response) {
-        const messageDiv = document.createElement('div');
-        messageDiv.className = 'elena-message';
-        messageDiv.textContent = response;
-        messagesContainer.appendChild(messageDiv);
-    } else {
-        const messageDiv = document.createElement('div');
-        messageDiv.className = 'elena-message';
-        messageDiv.textContent = '连接失败了...你可以试试预设的问题。';
-        messagesContainer.appendChild(messageDiv);
-    }
-    
+    const loading = document.getElementById('elenaLoading');
+    if (loading) loading.remove();
+
+    const messageDiv = document.createElement('div');
+    messageDiv.className = 'elena-message';
+    messageDiv.textContent = response || '姐姐不知道说什么...';
+    messagesContainer.appendChild(messageDiv);
     messagesContainer.scrollTop = messagesContainer.scrollHeight;
 }
 
@@ -557,16 +552,6 @@ async function sendToElena() {
     const chaosLevel = gameState.character.chaos;
     const turn = gameState.turn;
     const currentCard = gameState.currentCard;
-    
-    const prompt = `你是战锤40K游戏的AI主持人伊莲娜，用姐姐的口吻（稍微调皮但关心）回答玩家的问题。
-
-当前游戏状态：
-- 回合：${turn}/14
-- 混沌值：${chaosLevel}
-- 当前任务：${currentCard?.name || '无'}
-- 任务类型：${currentCard?.type || '无'}
-
-请用中文回答玩家的问题，符合伊莲娜的姐姐口吻。`;
 
     // 使用预设对话（不再调用AI）
     // 根据问题关键词选择合适的预设回答
@@ -574,13 +559,13 @@ async function sendToElena() {
     const questionLower = question.toLowerCase();
 
     if (questionLower.includes('任务') || questionLower.includes('卡')) {
-        response = getElenaTip('card');
+        response = window.getElenaTip ? window.getElenaTip('card') : '预设加载失败...';
     } else if (questionLower.includes('混沌')) {
-        response = getElenaTip('chaos');
+        response = window.getElenaTip ? window.getElenaTip('chaos') : '预设加载失败...';
     } else if (questionLower.includes('怎么') || questionLower.includes('做') || questionLower.includes('策略')) {
-        response = getElenaTip('strategy');
+        response = window.getElenaTip ? window.getElenaTip('strategy') : '预设加载失败...';
     } else if (questionLower.includes('玩法') || questionLower.includes('游戏')) {
-        response = getElenaTip('general');
+        response = window.getElenaTip ? window.getElenaTip('general') : '预设加载失败...';
     } else {
         // 通用回答（根据当前状态）
         if (gameState.character.chaos > 50) {
@@ -588,7 +573,7 @@ async function sendToElena() {
         } else if (gameState.turn > 10) {
             response = '战斗已经持续很久了...你还好吗？坚持住，胜利就在前方！';
         } else {
-            response = getElenaTip('general');
+            response = window.getElenaTip ? window.getElenaTip('general') : '预设加载失败...';
         }
     }
 
