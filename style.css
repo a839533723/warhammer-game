@@ -292,6 +292,22 @@ body {
     transform: translateX(5px);
 }
 
+.action-btn.highlight {
+    background: linear-gradient(135deg, rgba(139, 92, 246, 0.3) 0%, rgba(139, 92, 246, 0.5) 100%);
+    border: 2px solid #8b5cf6;
+    animation: highlightPulse 2s ease-in-out infinite;
+}
+
+.action-btn.highlight:hover {
+    background: linear-gradient(135deg, rgba(139, 92, 246, 0.5) 0%, rgba(139, 92, 246, 0.7) 100%);
+    transform: translateX(5px) scale(1.02);
+}
+
+@keyframes highlightPulse {
+    0%, 100% { box-shadow: 0 0 5px rgba(139, 92, 246, 0.5); }
+    50% { box-shadow: 0 0 20px rgba(139, 92, 246, 0.8); }
+}
+
 .action-cost {
     float: right;
     font-size: 12px;

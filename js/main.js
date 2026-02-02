@@ -408,6 +408,72 @@ function performDevotionAction(action) {
     updateUI();
 }
 
+/**
+ * 招募追随者
+ */
+function recruitFollower() {
+    const cost = 30;
+
+    if (gameState.resources.materials < cost) {
+        addDialog('system', '⚠️', '物资不足！需要' + cost + '物资');
+        return;
+    }
+
+    // 检查是否已达到追随者上限
+    if (gameState.character.followers.length >= 5) {
+        addDialog('system', '⚠️', '追随者已达到上限（5人）！');
+        return;
+    }
+
+    // 消耗物资
+    gameState.resources.materials -= cost;
+
+    // 随机生成追随者
+    const followerTypes = ['combat', 'psychic'];
+    const type = followerTypes[Math.floor(Math.random() * followerTypes.length)];
+
+    const names = {
+        combat: ['突击队员阿尔法', '重装战士贝塔', '近战专家伽马', '狙击手德尔塔', '爆破手艾普西隆'],
+        psychic: ['灵能者泽塔', '先知伊塔', '读心者Theta', '预言者Kappa', '灵能刺客Lambda']
+    };
+
+    const abilities = {
+        combat: ['+5攻击', '+3防御', '+2闪避'],
+        psychic: ['混沌抗性+10', '灵能感知', '心灵护盾']
+    };
+
+    const name = names[type][Math.floor(Math.random() * names[type].length)];
+    const ability = abilities[type][Math.floor(Math.random() * abilities[type].length)];
+
+    const follower = {
+        name: name,
+        type: type,
+        ability: ability,
+        recruitedAt: gameState.turn
+    };
+
+    // 添加追随者
+    gameState.character.followers.push(follower);
+
+    addDialog('system', '👥', '你成功招募了追随者！');
+    addDialog('npc', '👤', '我叫' + name + '，将为您效忠！');
+    addDialog('system', '✨', '获得追随者：' + name + '（' + (type === 'combat' ? '战斗型' : '灵能型') + '，' + ability + '）');
+
+    updateUI();
+}
+
+// 导出函数到全局
+window.showCategory = showCategory;
+window.addDialog = addDialog;
+window.updateUI = updateUI;
+window.showFullStatus = showFullStatus;
+window.performFaithAction = performFaithAction;
+window.performDevotionAction = performDevotionAction;
+window.recruitFollower = recruitFollower;
+window.saveGame = saveGame;
+window.loadGame = loadGame;
+window.resetGame = resetGame;
+
 // 导出函数到全局
 window.showCategory = showCategory;
 window.addDialog = addDialog;
