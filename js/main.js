@@ -593,3 +593,25 @@ window.hideElenaChat = hideElenaChat;
 window.askElena = askElena;
 window.sendToElena = sendToElena;
 window.showNextCardButton = showNextCardButton;
+
+// ============================================
+// 难度选择器
+// ============================================
+
+function showDifficultySelector() {
+    const popup = document.getElementById('difficultyPopup');
+    if (popup) {
+        popup.style.display = 'flex';
+    }
+}
+
+function closeDifficultySelector() {
+    const popup = document.getElementById('difficultyPopup');
+    if (popup) {
+        popup.style.display = 'none';
+    }
+}
+
+// 导出难度选择函数
+window.showDifficultySelector = showDifficultySelector;
+window.closeDifficultySelector = closeDifficultySelector;

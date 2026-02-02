@@ -196,6 +196,12 @@
                 <button class="action-btn" onclick="showBuildingPanel()">
                     🏗️ 建筑系统
                 </button>
+                <button class="action-btn" onclick="showAchievements()">
+                    🏆 成就系统
+                </button>
+                <button class="action-btn" onclick="showDifficultySelector()">
+                    🎯 难度选择
+                </button>
                 <button class="action-btn" onclick="showCombatPanel(getRandomEnemy('chaos'))">
                     ⚔️ 自由战斗
                 </button>
@@ -301,9 +307,115 @@
     <script src="js/presetDialogues.js"></script>
     <script src="js/aiSystem.js"></script>
     <script src="js/expandedCards.js"></script>
+    <script src="js/achievementSystem.js"></script>
     <script src="js/combatSystem.js"></script>
     <script src="js/buildingSystem.js"></script>
     <script src="js/gameState.js"></script>
     <script src="js/main.js"></script>
 </body>
 </html>
+
+<!-- 难度选择器 -->
+<div class="difficulty-popup" id="difficultyPopup" style="display: none;">
+    <div class="difficulty-content">
+        <div class="difficulty-header">
+            <h2>🎯 选择难度</h2>
+            <p>难度会影响游戏体验，请谨慎选择</p>
+        </div>
+        <div class="difficulty-options">
+            <button class="difficulty-btn easy" onclick="selectDifficulty('easy')">
+                <span class="diff-icon">🟢</span>
+                <span class="diff-name">简单</span>
+                <span class="diff-desc">敌人伤害-30%，资源+30%</span>
+            </button>
+            <button class="difficulty-btn normal" onclick="selectDifficulty('normal')">
+                <span class="diff-icon">🟡</span>
+                <span class="diff-name">普通</span>
+                <span class="diff-desc">标准游戏体验</span>
+            </button>
+            <button class="difficulty-btn hard" onclick="selectDifficulty('hard')">
+                <span class="diff-icon">🔴</span>
+                <span class="diff-name">困难</span>
+                <span class="diff-desc">敌人伤害+30%，资源-20%</span>
+            </button>
+        </div>
+        <button class="close-difficulty" onclick="closeDifficultySelector()">×</button>
+    </div>
+</div>
+
+<style>
+.difficulty-popup {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.9);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1001;
+}
+
+.difficulty-content {
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+    border: 2px solid #4ade80;
+    border-radius: 16px;
+    padding: 30px;
+    max-width: 500px;
+    width: 90%;
+    text-align: center;
+    position: relative;
+}
+
+.difficulty-header h2 {
+    color: #4ade80;
+    margin: 0 0 10px 0;
+}
+
+.difficulty-header p {
+    color: #a0a0a0;
+    margin: 0 0 20px 0;
+}
+
+.difficulty-options {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.difficulty-btn {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    padding: 15px 20px;
+    border: 2px solid #333;
+    border-radius: 12px;
+    background: rgba(0, 0, 0, 0.3);
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-align: left;
+}
+
+.difficulty-btn.easy { border-color: #4ade80; }
+.difficulty-btn.easy:hover { background: rgba(74, 222, 128, 0.2); }
+.difficulty-btn.normal { border-color: #fbbf24; }
+.difficulty-btn.normal:hover { background: rgba(251, 191, 36, 0.2); }
+.difficulty-btn.hard { border-color: #ef4444; }
+.difficulty-btn.hard:hover { background: rgba(239, 68, 68, 0.2); }
+
+.diff-icon { font-size: 32px; }
+.diff-name { font-size: 18px; color: #fff; font-weight: bold; flex: 1; }
+.diff-desc { font-size: 12px; color: #a0a0a0; }
+
+.close-difficulty {
+    position: absolute;
+    top: 10px;
+    right: 15px;
+    background: none;
+    border: none;
+    color: #fff;
+    font-size: 24px;
+    cursor: pointer;
+}
+</style>
