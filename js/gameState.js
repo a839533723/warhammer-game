@@ -6,11 +6,11 @@
 let gameState = {
     // 游戏阶段
     phase: 'guide',  // guide(引导) -> main(主线)
-    
+
     // 回合信息
     turn: 1,
     maxTurns: 14,    // 总回合数
-    
+
     // 角色信息
     character: {
         name: '钛-7',
@@ -22,6 +22,13 @@ let gameState = {
         maxChaos: 100,
         faith: 50,       // 信仰值（影响帝皇相关任务）
         followers: []    // 追随者列表
+    },
+
+    // 资源历史（用于趋势显示）
+    resourceHistory: {
+        materials: [],   // [{turn: 1, value: 50}, ...]
+        intelligence: [],
+        faithPoints: []
     },
     
     // 当前任务卡
@@ -125,38 +132,74 @@ function addDialog(type, avatar, text) {
     }
 }
 
+function recordResourceHistory() {
+    // 记录当前回合的资源值
+    const turn = gameState.turn;
+    gameState.resourceHistory.materials.push({turn: turn, value: gameState.resources.materials});
+    gameState.resourceHistory.intelligence.push({turn: turn, value: gameState.resources.intelligence});
+    gameState.resourceHistory.faithPoints.push({turn: turn, value: gameState.resources.faithPoints});
+
+    // 限制历史记录数量（只保留最近10回合）
+    const maxHistory = 10;
+    if (gameState.resourceHistory.materials.length > maxHistory) {
+        gameState.resourceHistory.materials.shift();
+        gameState.resourceHistory.intelligence.shift();
+        gameState.resourceHistory.faithPoints.shift();
+    }
+}
+
+function updateResourceTrend(type, currentValue) {
+    // 计算趋势
+    const history = gameState.resourceHistory[type];
+    if (!history || history.length < 2) return '';
+
+    const current = history[history.length - 1].value;
+    const previous = history[history.length - 2].value;
+
+    if (current > previous) {
+        return '<span class="resource-trend up">↑' + (current - previous) + '</span>';
+    } else if (current < previous) {
+        return '<span class="resource-trend down">↓' + (previous - current) + '</span>';
+    } else {
+        return '<span class="resource-trend same">-</span>';
+    }
+}
+
 function updateUI() {
     if (!gameState) return;
-    
+
+    // 记录资源历史
+    recordResourceHistory();
+
     // 角色信息
     const charName = document.getElementById('charName');
     const charClass = document.getElementById('charClass');
     const hpValue = document.getElementById('hpValue');
     const chaosValue = document.getElementById('chaosValue');
     const faithValue = document.getElementById('faithValue');
-    
+
     if (charName) charName.textContent = gameState.character.name;
     if (charClass) charClass.textContent = gameState.character.class + ' Lv.' + gameState.character.level;
     if (hpValue) hpValue.textContent = gameState.character.hp;
     if (chaosValue) chaosValue.textContent = gameState.character.chaos;
     if (faithValue) faithValue.textContent = gameState.character.faith;
-    
-    // 资源
+
+    // 资源（带趋势显示）
     const materialValue = document.getElementById('materialValue');
     const intelligenceValue = document.getElementById('intelligenceValue');
     const faithPointsValue = document.getElementById('faithPointsValue');
-    
-    if (materialValue) materialValue.textContent = gameState.resources.materials;
-    if (intelligenceValue) intelligenceValue.textContent = gameState.resources.intelligence;
-    if (faithPointsValue) faithPointsValue.textContent = gameState.resources.faithPoints;
-    
+
+    if (materialValue) materialValue.innerHTML = gameState.resources.materials + updateResourceTrend('materials', gameState.resources.materials);
+    if (intelligenceValue) intelligenceValue.innerHTML = gameState.resources.intelligence + updateResourceTrend('intelligence', gameState.resources.intelligence);
+    if (faithPointsValue) faithPointsValue.innerHTML = gameState.resources.faithPoints + updateResourceTrend('faithPoints', gameState.resources.faithPoints);
+
     // 混沌进度条
     updateChaosUI();
-    
+
     // 回合
     const turnNumber = document.getElementById('turnNumber');
     const chaosProgress = document.getElementById('chaosProgress');
-    
+
     if (turnNumber) turnNumber.textContent = gameState.turn;
     if (chaosProgress) chaosProgress.textContent = gameState.character.chaos;
     
