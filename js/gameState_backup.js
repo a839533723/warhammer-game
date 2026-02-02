@@ -516,22 +516,13 @@ function startMainPhase() {
 }
 
 /**
- * 抽取卡牌（使用扩展卡牌系统）
+ * 抽取卡牌
  */
 async function drawCard() {
     const types = ['chaos', 'faith', 'combat', 'devotion'];
     const type = types[Math.floor(Math.random() * types.length)];
-
-    // 30%概率使用扩展卡牌
-    const useExpanded = Math.random() < 0.3 && window.getExpandedCard;
-    let card;
-
-    if (useExpanded) {
-        card = getExpandedCard(type);
-    } else {
-        card = generateCard(type);
-    }
-
+    
+    const card = generateCard(type);
     gameState.currentCard = card;
     gameState.cardProgress = 0;
     gameState.hand = [card];
@@ -547,7 +538,7 @@ async function drawCard() {
     }
 
     addDialog('system', '⏰', `任务期限：${gameState.maxCardProgress}回合`);
-
+    
     // 根据卡牌类型显示提示
     if (type === 'chaos') {
         addDialog('system', '🔍', '任务：找出内鬼。点击"调查"面板审问NPC。');
@@ -559,12 +550,7 @@ async function drawCard() {
     } else if (type === 'devotion') {
         addDialog('system', '💕', '任务：获取追随者。点击"眷属"面板送礼或帮助NPC。');
     }
-
-    // 检查是否有特殊事件
-    if (card.special) {
-        addDialog('system', '⭐', `特殊事件：${card.special}`);
-    }
-
+    
     updateUI();
 }
 
@@ -902,48 +888,45 @@ function completeCard(success) {
 function endTurn() {
     gameState.turn++;
     gameState.cardProgress++;
-
+    
     // 检查卡牌任务进度
     if (gameState.currentCard) {
         gameState.cardProgress++;
-
+        
         if (gameState.cardProgress >= gameState.maxCardProgress) {
             addDialog('system', '⏰', '任务超时！');
             addDialog('system', '💀', '混沌值+30');
             gameState.character.chaos = Math.min(100, gameState.character.chaos + 30);
-
+            
             // 任务失败
             completeCard(false);
         } else {
             addDialog('system', '📊', `任务剩余回合：${gameState.maxCardProgress - gameState.cardProgress}`);
         }
     }
-
-    // 基础产出
-    const baseOutput = 5 + gameState.turn * 2;  // 基础产出随回合增加
-    gameState.resources.materials += baseOutput;
-
+    
     // 建筑产出
-    processBuildingProduction();
-
-    addDialog('system', '📦', `回合 ${gameState.turn} 开始！基础产出 +${baseOutput} 物资`);
-
+    const baseOutput = 10 * gameState.turn;  // 每回合固定产出
+    gameState.resources.materials += baseOutput;
+    
+    addDialog('system', '📦', `回合 ${gameState.turn} 开始！巢穴产出 +${baseOutput} 物资`);
+    
     // 抽取新卡牌
     if (!gameState.currentCard) {
         drawCard();
     }
-
+    
     // 混沌自然恢复（低概率）
     if (gameState.character.chaos > 0 && Math.random() < 0.1) {
         gameState.character.chaos = Math.max(0, gameState.character.chaos - 2);
         addDialog('system', '✨', '净化仪式生效：混沌值-2');
     }
-
+    
     // 检查游戏结束
     if (gameState.turn > gameState.maxTurns) {
         addDialog('system', '🎉', '恭喜！你成功在14回合内存活下来！');
         addDialog('system', '🏆', '最终混沌值：' + gameState.character.chaos);
-
+        
         if (gameState.character.chaos < 50) {
             addDialog('system', '✨', '你保持了纯净的灵魂，帝国会记住你的功绩！');
         } else {
@@ -951,14 +934,14 @@ function endTurn() {
         }
         return;
     }
-
+    
     // 检查堕落
     if (gameState.character.chaos >= 100) {
         addDialog('system', '☠️', '【堕落】你的灵魂已被混沌吞噬...');
         addDialog('system', '💀', '游戏结束');
         return;
     }
-
+    
     saveGame();
     updateUI();
 }

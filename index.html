@@ -193,6 +193,12 @@
                 <button class="action-btn" onclick="showFullStatus()">
                     📊 查看完整状态
                 </button>
+                <button class="action-btn" onclick="showBuildingPanel()">
+                    🏗️ 建筑系统
+                </button>
+                <button class="action-btn" onclick="showCombatPanel(getRandomEnemy('chaos'))">
+                    ⚔️ 自由战斗
+                </button>
                 <button class="action-btn" onclick="endTurn()">
                     ⏭️ 回合结束
                 </button>
@@ -294,6 +300,9 @@
     <!-- 加载JS模块 -->
     <script src="js/presetDialogues.js"></script>
     <script src="js/aiSystem.js"></script>
+    <script src="js/expandedCards.js"></script>
+    <script src="js/combatSystem.js"></script>
+    <script src="js/buildingSystem.js"></script>
     <script src="js/gameState.js"></script>
     <script src="js/main.js"></script>
 </body>
